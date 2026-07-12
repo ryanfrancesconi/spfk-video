@@ -6,12 +6,12 @@ import PackageDescription
 let package = Package(
     name: "spfk-video",
     defaultLocalization: "en",
-    platforms: [.macOS(.v13),],
+    platforms: [.macOS(.v13)],
     products: [
         .library(
             name: "SPFKVideo",
-            targets: ["SPFKVideo",]
-        ),
+            targets: ["SPFKVideo"]
+        )
     ],
     dependencies: [
         .package(url: "https://github.com/ryanfrancesconi/spfk-base", from: "1.0.1"),
@@ -21,7 +21,7 @@ let package = Package(
         .target(
             name: "SPFKVideo",
             dependencies: [
-                .product(name: "SPFKBase", package: "spfk-base"),
+                .product(name: "SPFKBase", package: "spfk-base")
             ]
         ),
         .testTarget(
