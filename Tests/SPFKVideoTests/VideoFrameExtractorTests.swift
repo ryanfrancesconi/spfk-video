@@ -93,6 +93,26 @@ struct VideoFrameExtractorTests {
         }
     }
 
+    // MARK: - Out-of-range timestamps
+
+    /// Regression test: a video's own `AVAsset.duration` can be shorter than a sibling
+    /// audio track's duration (a real-world container mismatch, not test-only), so a caller
+    /// sampling against the audio track's length can request a timestamp past the video's
+    /// actual end. `AVAssetImageGenerator` fails such a request outright ("Cannot Open")
+    /// rather than clamping to the nearest valid frame — verify the extractor drops it up
+    /// front instead of throwing and discarding the rest of the batch.
+    @Test("Timestamp at or beyond the asset's duration is dropped, not thrown")
+    func timestampBeyondDurationIsDropped() async throws {
+        let videoURL = try await VideoTestFixture.makeTestVideo(duration: 5.0)
+        defer { try? FileManager.default.removeItem(at: videoURL) }
+
+        let frames = try await VideoFrameExtractor.frames(from: videoURL, at: [1.0, 3.0, 10.0])
+
+        #expect(frames[1.0] != nil)
+        #expect(frames[3.0] != nil)
+        #expect(frames[10.0] == nil, "timestamp beyond the asset's duration should be dropped, not extracted")
+    }
+
     // MARK: - Tolerance behavior
 
     /// Verifies the tolerance wiring is actually applied and not just configured silently.

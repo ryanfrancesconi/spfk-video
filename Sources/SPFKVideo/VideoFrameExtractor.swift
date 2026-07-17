@@ -36,10 +36,11 @@ public enum VideoFrameExtractor {
     ///     Zero forces frame-accurate extraction; larger values allow the generator to use
     ///     the nearest already-decoded frame for better throughput. Defaults to
     ///     ``defaultTolerance``.
-    /// - Returns: Images keyed by the requested timestamp. Every timestamp in the input
-    ///   array appears as a key if extraction succeeds.
-    /// - Throws: ``VideoFrameExtractionError`` if the asset is not playable, or if any
-    ///   individual frame extraction fails.
+    /// - Returns: Images keyed by the requested timestamp. A timestamp whose frame fails to
+    ///   extract (logged, not thrown) is simply absent from the result — one bad frame doesn't
+    ///   discard the rest of the batch.
+    /// - Throws: ``VideoFrameExtractionError/assetNotPlayable(_:)`` if the asset itself is not
+    ///   playable (missing, corrupt, or unsupported format).
     public static func frames(
         from url: URL,
         at timestamps: [TimeInterval],
@@ -53,6 +54,8 @@ public enum VideoFrameExtractor {
             throw VideoFrameExtractionError.assetNotPlayable(url)
         }
 
+        let duration = try await asset.load(.duration)
+
         let generator = AVAssetImageGenerator(asset: asset)
         generator.appliesPreferredTrackTransform = true
 
@@ -64,16 +67,26 @@ public enum VideoFrameExtractor {
         generator.requestedTimeToleranceBefore = toleranceCMTime
         generator.requestedTimeToleranceAfter = toleranceCMTime
 
-        let cmTimes = timestamps.map { CMTime(seconds: $0, preferredTimescale: 600) }
+        // A timestamp at or beyond the asset's actual duration (e.g. sampled against a
+        // sibling audio track whose duration doesn't exactly match the video track's) fails
+        // extraction outright ("Cannot Open") rather than clamping to the nearest valid
+        // frame — drop it before ever making the request instead of relying on the
+        // per-frame failure handling below.
+        let validTimestamps = timestamps.filter {
+            CMTimeCompare(CMTime(seconds: $0, preferredTimescale: 600), duration) < 0
+        }
+        guard !validTimestamps.isEmpty else { return [:] }
+
+        let cmTimes = validTimestamps.map { CMTime(seconds: $0, preferredTimescale: 600) }
 
         // Reverse lookup by CMTime so the returned dictionary keys are the original
         // TimeInterval values without floating-point conversion loss through CMTime.seconds.
         let cmTimeToTimestamp = Dictionary(
-            zip(cmTimes, timestamps),
+            zip(cmTimes, validTimestamps),
             uniquingKeysWith: { first, _ in first }
         )
 
-        var results = [TimeInterval: CGImage](minimumCapacity: timestamps.count)
+        var results = [TimeInterval: CGImage](minimumCapacity: validTimestamps.count)
 
         defer { generator.cancelAllCGImageGeneration() }
 
@@ -83,10 +96,10 @@ public enum VideoFrameExtractor {
                 results[cmTimeToTimestamp[requestedTime] ?? requestedTime.seconds] = image
 
             case .failure(let requestedTime, let error):
-                throw VideoFrameExtractionError.frameFailed(
-                    timestamp: cmTimeToTimestamp[requestedTime] ?? requestedTime.seconds,
-                    underlyingError: error
-                )
+                // One unreadable frame (e.g. a corrupt GOP, a decoder resource conflict) shouldn't
+                // discard every other frame in the batch — skip it and keep collecting the rest.
+                let timestamp = cmTimeToTimestamp[requestedTime] ?? requestedTime.seconds
+                Log.error("Failed to extract video frame at \(timestamp)s from \(url.lastPathComponent)", error)
             }
         }
 
