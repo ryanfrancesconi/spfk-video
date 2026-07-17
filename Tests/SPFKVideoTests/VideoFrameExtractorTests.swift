@@ -113,6 +113,28 @@ struct VideoFrameExtractorTests {
         #expect(frames[10.0] == nil, "timestamp beyond the asset's duration should be dropped, not extracted")
     }
 
+    @Test("Every requested timestamp beyond duration returns an empty dictionary, not a throw")
+    func allTimestampsBeyondDurationReturnsEmpty() async throws {
+        let videoURL = try await VideoTestFixture.makeTestVideo(duration: 5.0)
+        defer { try? FileManager.default.removeItem(at: videoURL) }
+
+        let frames = try await VideoFrameExtractor.frames(from: videoURL, at: [10.0, 12.0])
+
+        #expect(frames.isEmpty)
+    }
+
+    // MARK: - duration(of:)
+
+    @Test("duration(of:) reports the video track's own duration")
+    func durationOfReportsVideoTrackDuration() async throws {
+        let videoURL = try await VideoTestFixture.makeTestVideo(duration: 5.0)
+        defer { try? FileManager.default.removeItem(at: videoURL) }
+
+        let duration = try await VideoFrameExtractor.duration(of: videoURL)
+
+        #expect(abs(duration - 5.0) < 0.1)
+    }
+
     // MARK: - Tolerance behavior
 
     /// Verifies the tolerance wiring is actually applied and not just configured silently.
