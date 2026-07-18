@@ -142,6 +142,37 @@ final class VideoFrameDataStoreTests: BinTestCase {
         #expect(orphanedGone == nil)
     }
 
+    /// Regression test: `prune()`'s returned count previously incremented unconditionally
+    /// after a swallowed `try?` on `removeItem`, so a failed removal (permissions, file in
+    /// use) was misreported as successful.
+    ///
+    /// Locks the per-video subdirectory itself (not the store's root) — POSIX requires
+    /// write access on the *containing* directory to remove an entry, so this blocks
+    /// removal of everything inside it. Locking only the store's root instead would let
+    /// `removeItem`'s recursive descent delete the inner file first (its own parent, the
+    /// per-video subdirectory, would still permit that) and only fail on the now-empty
+    /// subdirectory itself — a real, first-draft mistake caught by this exact test run,
+    /// where the "file still exists" assertion below failed even though the count
+    /// assertion correctly passed.
+    @Test func pruneDoesNotCountFailedRemovalsAsSuccessful() async throws {
+        deleteBinOnExit = true
+        let store = try VideoFrameDataStore(inDirectory: bin)
+        let orphanedURL = fakeURL(index: 10)
+
+        try await store.insert(.thumbnail, cgImage: syntheticImage(), timestamp: 1.0, for: orphanedURL)
+
+        let videoDir = store.directoryURL.appendingPathComponent(orphanedURL.sha256)
+        let fm = FileManager.default
+        try fm.setAttributes([.posixPermissions: 0o555], ofItemAtPath: videoDir.path)
+        defer { try? fm.setAttributes([.posixPermissions: 0o755], ofItemAtPath: videoDir.path) }
+
+        let removedCount = await store.prune(activeKeys: [])
+
+        #expect(removedCount == 0, "a failed removal must not be counted as removed")
+        let stillThere = await store.fetch(.thumbnail, timestamp: 1.0, for: orphanedURL)
+        #expect(stillThere != nil, "the cached frame should still exist since removal failed")
+    }
+
     // MARK: - count
 
     @Test func countReflectsTotalFramesAcrossVideosAndTiers() async throws {

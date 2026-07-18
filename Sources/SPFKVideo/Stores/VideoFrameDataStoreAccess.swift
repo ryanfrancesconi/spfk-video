@@ -6,6 +6,10 @@ import Foundation
 public protocol VideoFrameDataStoreAccess: Sendable {
     func insertVideoFrame(_ tier: VideoFrameTier, cgImage: CGImage, timestamp: TimeInterval, for url: URL) async throws
     func fetchVideoFrame(_ tier: VideoFrameTier, timestamp: TimeInterval, for url: URL) async -> CGImage?
+
+    /// Not currently called by any consumer — `fetchVideoFrame` returning `nil` already
+    /// serves as the practical existence check callers use. Kept for API symmetry with
+    /// `insertVideoFrame`/`fetchVideoFrame` and to mirror `ImageDataStoreAccess`'s shape.
     func videoFrameExists(_ tier: VideoFrameTier, timestamp: TimeInterval, for url: URL) async -> Bool
 
     @discardableResult

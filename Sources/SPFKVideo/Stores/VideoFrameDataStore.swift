@@ -90,6 +90,11 @@ extension VideoFrameDataStore {
     }
 
     /// Removes every cached frame (both tiers, all timestamps) for the given video.
+    ///
+    /// Not currently called in production — `prune(activeURLs:)`/`prune(activeKeys:)` handle
+    /// the app's actual cache-eviction path. Kept as public API for explicit single-video
+    /// invalidation (e.g. "re-extract this video's thumbnails"), mirroring the equivalent
+    /// method on sibling stores (`ImageDataStore`, `WaveformDataStore`).
     public func delete(url: URL) {
         try? FileManager.default.removeItem(at: fileDirectory(for: url.sha256))
     }
@@ -117,13 +122,20 @@ extension VideoFrameDataStore {
             let key = dir.lastPathComponent
             guard !activeKeys.contains(key) else { continue }
             Log.debug("pruning orphaned video frame cache: \(key)")
-            try? fm.removeItem(at: dir)
-            removedCount += 1
+            do {
+                try fm.removeItem(at: dir)
+                removedCount += 1
+            } catch {
+                Log.error("Failed to prune orphaned video frame cache: \(key)", error)
+            }
         }
         return removedCount
     }
 
     /// Total number of cached frames (both tiers, across every video).
+    ///
+    /// Not currently called in production — kept for diagnostics/debugging and to mirror
+    /// `count()` on sibling stores.
     public func count() -> Int {
         let fm = FileManager.default
         guard let fileDirs = try? fm.contentsOfDirectory(
