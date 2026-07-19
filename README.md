@@ -7,7 +7,9 @@
 
 Video frame extraction and caching for Swift, built on Apple's [AVFoundation](https://developer.apple.com/documentation/avfoundation) framework.
 
-Fills a real gap in Apple's own frameworks — [Vision](https://developer.apple.com/documentation/vision) has no video-native classification or sampling API, only single-image requests. `VideoFrameExtractor` provides a UI-agnostic, async/await-native primitive for extracting still frames from a video asset at given timestamps, with configurable output size and tolerance.
+`VideoFrameExtractor` provides a UI-agnostic, async/await-native primitive for extracting still frames from a video asset at given timestamps, with configurable output size and tolerance. `VideoFrameDataStore` caches the results to disk, keyed by source video and timestamp.
+
+This package is deliberately scoped to extraction and caching only — no classification. The `.fullQuality` frame tier exists specifically to be consumed by an upcoming `spfk-image-analysis` package (built on [Vision](https://developer.apple.com/documentation/vision), which has no video-native classification or sampling API, only single-image requests), which will share this store rather than building its own frame cache.
 
 ## Usage
 
