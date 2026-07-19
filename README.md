@@ -8,9 +8,22 @@ Video frame extraction and caching for Swift, built on Apple's [AVFoundation](ht
 
 Fills a real gap in Apple's own frameworks — [Vision](https://developer.apple.com/documentation/vision) has no video-native classification or sampling API, only single-image requests. `VideoFrameExtractor` provides a UI-agnostic, async/await-native primitive for extracting still frames from a video asset at given timestamps, with configurable output size and tolerance.
 
-Named neutrally (`spfk-video`, not `spfk-video-frame-extraction`) to comfortably hold other well-justified, similarly-scoped video utilities later without a package rename.
-
 ## Usage
+
+### Video Track & QuickTime Metadata
+
+```swift
+import SPFKVideo
+
+let result = await VideoTrackReader.read(from: videoURL)
+let videoTrack = result.videoTrack                // VideoTrackProperties?
+let quickTimeUserData = result.quickTimeUserData  // QuickTimeUserData?
+
+print(videoTrack?.width, videoTrack?.height, videoTrack?.frameRate, videoTrack?.codec)
+print(quickTimeUserData?.deviceMake, quickTimeUserData?.latitude, quickTimeUserData?.longitude)
+```
+
+`VideoTrackReader.read(from:)` reads video-technical properties (resolution, frame rate, codec, pixel aspect ratio, rotation) via `AVAssetTrack`, and QuickTime user-data (GPS, capture device, creation date) via `AVMetadataItem`. Both reads are best-effort and independent — a failure in one doesn't suppress the other. QuickTime metadata is merged from both the modern `mdta` keyspace (`.quickTimeMetadata`) and the legacy `udta` keyspace (`.quickTimeUserData`), since which keyspace a given file populates varies by capture device/software.
 
 ### Frame Extraction
 
@@ -32,22 +45,7 @@ let duration = try await VideoFrameExtractor.duration(of: videoURL)
 
 `frames(from:at:maximumSize:tolerance:)` uses `AVAssetImageGenerator`'s `images(for:)` async sequence. Wide tolerance (0.3s default) lets the generator reuse the nearest already-decoded frame rather than forcing exact decoding — significantly faster for thumbnail and classification sampling that doesn't need frame-perfect accuracy. A timestamp whose frame fails to extract is simply absent from the result rather than failing the whole batch.
 
-### Frame Caching
-
-```swift
-import SPFKVideo
-
-let store = try VideoFrameDataStore(inDirectory: cacheDirectoryURL)
-
-try await store.insert(.thumbnail, cgImage: frame, timestamp: 3.0, for: videoURL)
-let cached = await store.fetch(.thumbnail, timestamp: 3.0, for: videoURL)  // CGImage?
-let has = await store.exists(.thumbnail, timestamp: 3.0, for: videoURL)   // Bool
-
-// Remove every cached video not present in the active set.
-await store.prune(activeURLs: currentLibraryURLs)
-```
-
-`VideoFrameDataStore` is a disk cache for extracted frames, keyed by source video (`URL.sha256`) and timestamp, stored as JPEG under `Data/Video/<fileKey>/`. `VideoFrameTier` distinguishes `.thumbnail` (UI scrubber display) from `.fullQuality` (classification input, reserved for a future video-classification consumer sharing this same cache).
+This package is extraction only — no persistence. Disk caching of extracted frames is an application-level concern and lives in the consuming app's own data layer.
 
 ## Dependencies
 
