@@ -5,11 +5,9 @@
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-video%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/ryanfrancesconi/spfk-video)
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-video%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/ryanfrancesconi/spfk-video)
 
-Video frame extraction and caching for Swift, built on Apple's [AVFoundation](https://developer.apple.com/documentation/avfoundation) framework.
+Video frame extraction and track/metadata reading for Swift, built on Apple's [AVFoundation](https://developer.apple.com/documentation/avfoundation) framework.
 
-`VideoFrameExtractor` provides a UI-agnostic, async/await-native primitive for extracting still frames from a video asset at given timestamps, with configurable output size and tolerance. `VideoFrameDataStore` caches the results to disk, keyed by source video and timestamp.
-
-This package is deliberately scoped to extraction and caching only — no classification. The `.fullQuality` frame tier exists specifically to be consumed by an upcoming `spfk-image-analysis` package (built on [Vision](https://developer.apple.com/documentation/vision), which has no video-native classification or sampling API, only single-image requests), which will share this store rather than building its own frame cache.
+`VideoFrameExtractor` provides a UI-agnostic, async/await-native primitive for extracting still frames from a video asset at given timestamps, with configurable output size and tolerance. `VideoTrackReader` reads video-technical properties and QuickTime user-data metadata.
 
 ## Usage
 
