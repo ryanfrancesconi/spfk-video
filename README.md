@@ -24,8 +24,8 @@ Named neutrally (`spfk-video`, not `spfk-video-frame-extraction`) to comfortably
 
 ## Requirements
 
-- **Swift** 6.2+
-- **macOS** 13+
+- **Platforms:** macOS 13+
+- **Swift:** 6.2+
 
 ## About
 
