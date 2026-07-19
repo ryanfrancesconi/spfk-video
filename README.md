@@ -57,7 +57,7 @@ This package is extraction only — no persistence. Disk caching of extracted fr
 
 ## Requirements
 
-- **Platforms:** macOS 13+
+- **Platforms:** macOS 13+, iOS 16+
 - **Swift:** 6.2+
 
 ## About
