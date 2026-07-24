@@ -28,7 +28,7 @@ public enum VideoTrackReader {
 
             let naturalSize = try await track.load(.naturalSize)
             let transform = try await track.load(.preferredTransform)
-            let frameRate = try await track.load(.nominalFrameRate)
+            let nominalFrameRate = try await track.load(.nominalFrameRate)
             let formatDescriptions = try await track.load(.formatDescriptions)
 
             var codec: String?
@@ -39,10 +39,17 @@ public enum VideoTrackReader {
                 pixelAspectRatio = Self.pixelAspectRatio(from: description)
             }
 
+            // Best-effort, separate from the rest of this read: resolved against
+            // swift-timecode's standard-rate table from the exact rational frame duration
+            // (minFrameDuration/format description/timecode track), not the lossy nominal
+            // Float above. nil when the real rate doesn't match a known standard rate.
+            let preciseFrameRate = try? await asset.timecodeFrameRate()
+
             return VideoTrackProperties(
                 width: Int(naturalSize.width),
                 height: Int(naturalSize.height),
-                frameRate: frameRate,
+                nominalFrameRate: nominalFrameRate,
+                preciseFrameRate: preciseFrameRate,
                 codec: codec,
                 pixelAspectRatio: pixelAspectRatio,
                 rotationDegrees: rotationDegrees(from: transform)

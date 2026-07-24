@@ -1,6 +1,7 @@
 // Copyright Ryan Francesconi. All Rights Reserved. Revision History at https://github.com/ryanfrancesconi/spfk-video
 
 import Foundation
+import SwiftTimecode
 
 /// Video stream technical properties (resolution, frame rate, codec, pixel aspect ratio,
 /// rotation), read via AVFoundation (`AVAssetTrack`) rather than TagLib — these are
@@ -12,8 +13,18 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
     /// Pixel height of the video track's natural (untransformed) size.
     public var height: Int?
 
-    /// Nominal frame rate in frames per second, as reported by `AVAssetTrack.nominalFrameRate`.
-    public var frameRate: Float?
+    /// Nominal frame rate in frames per second, as reported by `AVAssetTrack.nominalFrameRate`
+    /// -- a single lossy `Float`, not a precisely measured rate. Prefer `preciseFrameRate`
+    /// when it's available; this stays around as a fallback and for display of the raw
+    /// as-reported value.
+    public var nominalFrameRate: Float?
+
+    /// The frame rate resolved against `swift-timecode`'s standard-rate table (23.976/24/25/
+    /// 29.97(d)/30(d)/etc., including drop-frame detection), derived from the asset's exact
+    /// rational frame duration rather than the lossy nominal `Float` -- see
+    /// `AVAsset.timecodeFrameRate(drop:)`. `nil` when the real rate doesn't match a known
+    /// standard rate, or detection fails.
+    public var preciseFrameRate: TimecodeFrameRate?
 
     /// Video codec identifier (e.g. a four-character-code string like "avc1", "hvc1"),
     /// derived from `AVAssetTrack.formatDescriptions`.
@@ -30,14 +41,16 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
     public init(
         width: Int? = nil,
         height: Int? = nil,
-        frameRate: Float? = nil,
+        nominalFrameRate: Float? = nil,
+        preciseFrameRate: TimecodeFrameRate? = nil,
         codec: String? = nil,
         pixelAspectRatio: Double? = nil,
         rotationDegrees: Int? = nil
     ) {
         self.width = width
         self.height = height
-        self.frameRate = frameRate
+        self.nominalFrameRate = nominalFrameRate
+        self.preciseFrameRate = preciseFrameRate
         self.codec = codec
         self.pixelAspectRatio = pixelAspectRatio
         self.rotationDegrees = rotationDegrees
