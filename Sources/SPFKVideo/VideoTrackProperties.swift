@@ -7,6 +7,28 @@ import SwiftTimecode
 /// rotation), read via AVFoundation (`AVAssetTrack`) rather than TagLib — these are
 /// stream-technical facts, not tags. `nil` for pure-audio files.
 public struct VideoTrackProperties: Hashable, Sendable, Codable {
+    /// Current schema version `VideoTrackReader` populates. Bump this whenever
+    /// `VideoTrackReader`'s video-track read starts populating a field it didn't populate
+    /// before. `parserVersion < currentParserVersion` (see `isOutdated`) then reliably flags a
+    /// value that was cached under an older reader and needs re-deriving from the source file --
+    /// unlike checking individual fields' nil-ness, which can't distinguish "this field didn't
+    /// exist yet" from "this field is legitimately absent for this file" (e.g. `preciseFrameRate`
+    /// is `nil` for plenty of freshly, fully parsed files whose exact rate doesn't match a
+    /// standard-rate table entry).
+    public static let currentParserVersion = 1
+
+    /// The schema version this value was populated at -- see `currentParserVersion`. Defaults
+    /// to `nil` only when decoded from data that predates this field's existence; any value
+    /// built through the memberwise `init` (including by `VideoTrackReader`) is stamped current
+    /// unless told otherwise. `nil` is treated as older than every real version -- see `isOutdated`.
+    public var parserVersion: Int?
+
+    /// `true` when this value may be missing fields the current `VideoTrackReader` would
+    /// populate, and should be re-derived from the source file rather than trusted as complete.
+    public var isOutdated: Bool {
+        (parserVersion ?? 0) < Self.currentParserVersion
+    }
+
     /// Pixel width of the video track's natural (untransformed) size.
     public var width: Int?
 
@@ -45,7 +67,8 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
         preciseFrameRate: TimecodeFrameRate? = nil,
         codec: String? = nil,
         pixelAspectRatio: Double? = nil,
-        rotationDegrees: Int? = nil
+        rotationDegrees: Int? = nil,
+        parserVersion: Int? = Self.currentParserVersion
     ) {
         self.width = width
         self.height = height
@@ -54,5 +77,6 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
         self.codec = codec
         self.pixelAspectRatio = pixelAspectRatio
         self.rotationDegrees = rotationDegrees
+        self.parserVersion = parserVersion
     }
 }

@@ -52,7 +52,8 @@ public enum VideoTrackReader {
                 preciseFrameRate: preciseFrameRate,
                 codec: codec,
                 pixelAspectRatio: pixelAspectRatio,
-                rotationDegrees: rotationDegrees(from: transform)
+                rotationDegrees: rotationDegrees(from: transform),
+                parserVersion: VideoTrackProperties.currentParserVersion
             )
         } catch {
             Log.error("Failed to read video track properties for \(url.lastPathComponent)", error)
