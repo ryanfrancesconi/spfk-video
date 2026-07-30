@@ -5,7 +5,8 @@ import OrderedCollections
 
 /// Read-only video-technical fields (resolution, frame rate, codec, pixel aspect ratio,
 /// rotation, GPS location, device make/model/software, capture date), pre-formatted as
-/// localized display strings keyed by ``Key``.
+/// localized display strings keyed by ``Key``. The GPS coordinate is additionally kept as raw
+/// values (``latitude``/``longitude``) for consumers that need to do more than print it.
 ///
 /// This is the presentation-ready data model only — it has no view-layer dependency.
 /// Consumers that wire these fields into an AppKit UI (row insertion, GPS map-pin buttons,
@@ -60,6 +61,13 @@ public struct VideoTechnicalProperties: Sendable, Hashable {
         .captureDate: nil,
     ]
 
+    /// The raw capture coordinate behind `dictionary[.gpsLocation]`'s display string, carried
+    /// alongside it as data. A consumer feeding a map (e.g. `SPFKUI`'s `PropertiesGroupGPSView`)
+    /// needs the actual values -- reformatting them into a string here and parsing them back out
+    /// there is lossy and breaks as soon as anything else is appended to the display text.
+    public var latitude: Double?
+    public var longitude: Double?
+
     public init() {}
 
     public init(videoTrack: VideoTrackProperties?, quickTimeUserData: QuickTimeUserData?) {
@@ -82,6 +90,8 @@ public struct VideoTechnicalProperties: Sendable, Hashable {
 
         if let quickTimeUserData {
             if let latitude = quickTimeUserData.latitude, let longitude = quickTimeUserData.longitude {
+                self.latitude = latitude
+                self.longitude = longitude
                 dictionary[.gpsLocation] = String(format: "%.5f, %.5f", latitude, longitude)
             }
             dictionary[.deviceMake] = quickTimeUserData.deviceMake
