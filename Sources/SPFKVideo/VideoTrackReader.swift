@@ -22,6 +22,22 @@ public enum VideoTrackReader {
         return (videoTrack, quickTimeUserData)
     }
 
+    /// Whether the file at `url` actually carries a video track.
+    ///
+    /// Distinct from a path-extension test such as `AudioFileType.isVideo`, which resolves the
+    /// extension's UTType and so reports an audio-only `.mp4`/`.mov` as video. Callers guarding a
+    /// destructive in-place operation need this instead — treating an audio-only container as
+    /// video needlessly refuses the operation, and the reverse discards a video track.
+    ///
+    /// Throws rather than returning `false` when the tracks can't be loaded, so a caller whose
+    /// safety depends on the answer can fail closed rather than reading an unreadable asset as
+    /// "no video". Not every format this app handles is one AVFoundation can open at all
+    /// (Ogg, Opus), so restrict the call to containers that could hold a video track.
+    public static func hasVideoTrack(url: URL) async throws -> Bool {
+        let asset = AVURLAsset(url: url)
+        return try await asset.loadTracks(withMediaType: .video).isNotEmpty
+    }
+
     private static func readVideoTrack(asset: AVURLAsset, url: URL) async -> VideoTrackProperties? {
         do {
             guard let track = try await asset.loadTracks(withMediaType: .video).first else { return nil }
