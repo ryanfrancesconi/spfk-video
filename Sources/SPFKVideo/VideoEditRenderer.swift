@@ -47,6 +47,13 @@ public actor VideoEditRenderer {
 
     private var session: AVAssetExportSession?
 
+    /// Forces the pre-macOS 15 export path regardless of the running OS. Tests only.
+    ///
+    /// Exists because `#available(macOS 15, *)` is always true on any current development or CI
+    /// machine, so that fallback would otherwise ship to macOS 13/14 users having never executed
+    /// anywhere. Deliberately not public.
+    var usesLegacyExportPath = false
+
     public init(sourceURL: URL, trim: TrimDescription, outputURL: URL) {
         self.sourceURL = sourceURL
         self.trim = trim
@@ -89,31 +96,29 @@ public actor VideoEditRenderer {
             throw VideoEditError.unsupportedOutputContainer(outputURL.pathExtension)
         }
 
-        session.outputURL = outputURL
-        session.outputFileType = outputFileType
         session.timeRange = timeRange
 
         self.session = session
         defer { self.session = nil }
 
-        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            session.exportAsynchronously { continuation.resume() }
+        do {
+            if #available(macOS 15, *), !usesLegacyExportPath {
+                // Native async: reports failure by throwing rather than through a status
+                // property, and its `isolation` parameter defaults to `#isolation`, so it stays
+                // on this actor without a continuation bridge. Takes the destination directly —
+                // `outputURL`/`outputFileType` must not also be set on the session.
+                try await session.export(to: outputURL, as: outputFileType)
+            } else {
+                try await exportPreMacOS15(session, to: outputURL, as: outputFileType)
+            }
+        } catch {
+            // A failed or cancelled export can still leave a partial file behind, and the
+            // caller's next step is typically to replace the original with it.
+            try? FileManager.default.removeItem(at: outputURL)
+            throw Self.renderError(from: error, sourceURL: sourceURL)
         }
 
-        switch session.status {
-        case .completed:
-            return outputURL
-
-        case .cancelled:
-            try? FileManager.default.removeItem(at: outputURL)
-            throw VideoEditError.cancelled
-
-        default:
-            // A failed export can still leave a partial file behind, and the caller's next step
-            // is typically to replace the original with it.
-            try? FileManager.default.removeItem(at: outputURL)
-            throw VideoEditError.exportFailed(sourceURL, underlying: session.error)
-        }
+        return outputURL
     }
 
     /// Cancels an in-flight ``render()``, which then throws ``VideoEditError/cancelled`` and
@@ -122,7 +127,59 @@ public actor VideoEditRenderer {
         session?.cancelExport()
     }
 
+    /// Tests only — see ``usesLegacyExportPath``.
+    func setUsesLegacyExportPath(_ value: Bool) {
+        usesLegacyExportPath = value
+    }
+
     // MARK: - Private
+
+    /// The export path for macOS 13 and 14, where `export(to:as:)` is unavailable.
+    ///
+    /// Sets the destination on the session, bridges the completion handler to async, and turns
+    /// the resulting `status` into a throw so both paths fail the same way for the caller.
+    ///
+    /// Deletes cleanly along with its call site once this package's deployment target reaches
+    /// macOS 15 — nothing else here depends on the pre-15 shape.
+    private func exportPreMacOS15(
+        _ session: AVAssetExportSession,
+        to url: URL,
+        as fileType: AVFileType
+    ) async throws {
+        session.outputURL = url
+        session.outputFileType = fileType
+
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            session.exportAsynchronously { continuation.resume() }
+        }
+
+        switch session.status {
+        case .completed:
+            return
+        case .cancelled:
+            throw VideoEditError.cancelled
+        default:
+            throw VideoEditError.exportFailed(sourceURL, underlying: session.error)
+        }
+    }
+
+    /// Normalizes what the two export paths throw into a single ``VideoEditError``.
+    ///
+    /// The macOS 15 path reports cancellation by throwing rather than through a status property,
+    /// and does so as `AVError.operationCancelled` when ``cancel()`` was called or as a
+    /// `CancellationError` when the enclosing task was cancelled — both mean the same thing here.
+    private static func renderError(from error: any Error, sourceURL: URL) -> VideoEditError {
+        if let error = error as? VideoEditError {
+            return error
+        }
+        if error is CancellationError {
+            return .cancelled
+        }
+        if let error = error as? AVError, error.code == .operationCancelled {
+            return .cancelled
+        }
+        return .exportFailed(sourceURL, underlying: error)
+    }
 
     /// Resolves the trim's seconds against the asset's real duration.
     ///

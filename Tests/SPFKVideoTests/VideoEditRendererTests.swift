@@ -189,6 +189,59 @@ final class VideoEditRendererTests {
         #expect(abs(duration - 3.0) < 0.1)
     }
 
+    // MARK: - Export paths
+
+    /// Both export paths must produce the same result. `#available(macOS 15, *)` is true on every
+    /// current development and CI machine, so without forcing it the pre-15 branch — the one
+    /// macOS 13/14 users actually run — would never execute anywhere before shipping.
+    @Test(arguments: [false, true])
+    func bothExportPathsProduceTheSameTrim(usesLegacyExportPath: Bool) async throws {
+        let source = try await Self.videoWithAudio(duration: 8)
+        defer { try? FileManager.default.removeItem(at: source) }
+
+        let output = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("mov")
+        defer { try? FileManager.default.removeItem(at: output) }
+
+        let renderer = VideoEditRenderer(
+            sourceURL: source,
+            trim: TrimDescription(inPoint: 2, outPoint: 5),
+            outputURL: output
+        )
+        await renderer.setUsesLegacyExportPath(usesLegacyExportPath)
+        try await renderer.render()
+
+        let asset = AVURLAsset(url: output)
+        let duration = try await asset.load(.duration).seconds
+        #expect(abs(duration - 3.0) < 0.05, "expected ~3s, got \(duration)s")
+        #expect(try await asset.loadTracks(withMediaType: .video).count == 1)
+        #expect(try await asset.loadTracks(withMediaType: .audio).count == 1)
+    }
+
+    /// The legacy path must report a refusal the same way the modern one does, rather than
+    /// leaving a partial file behind.
+    @Test func legacyExportPathStillRefusesAnUnwritableContainer() async throws {
+        let source = try await VideoTestFixture.makeTestVideo(duration: 4)
+        defer { try? FileManager.default.removeItem(at: source) }
+
+        let output = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("ts")
+
+        let renderer = VideoEditRenderer(
+            sourceURL: source,
+            trim: TrimDescription(inPoint: 1, outPoint: 2),
+            outputURL: output
+        )
+        await renderer.setUsesLegacyExportPath(true)
+
+        await #expect(throws: VideoEditError.self) {
+            try await renderer.render()
+        }
+        #expect(!output.exists)
+    }
+
     // MARK: - Helpers
 
     private static func render(_ source: URL, _ trim: TrimDescription) async throws -> URL {
