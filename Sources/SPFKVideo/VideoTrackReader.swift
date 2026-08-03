@@ -46,6 +46,7 @@ public enum VideoTrackReader {
             let transform = try await track.load(.preferredTransform)
             let nominalFrameRate = try await track.load(.nominalFrameRate)
             let formatDescriptions = try await track.load(.formatDescriptions)
+            let trackDuration = try await track.load(.timeRange).duration
 
             var codec: String?
             var pixelAspectRatio: Double?
@@ -67,6 +68,7 @@ public enum VideoTrackReader {
                 nominalFrameRate: nominalFrameRate,
                 preciseFrameRate: preciseFrameRate,
                 codec: codec,
+                duration: CMTimeGetSeconds(trackDuration),
                 pixelAspectRatio: pixelAspectRatio,
                 rotationDegrees: rotationDegrees(from: transform),
                 parserVersion: VideoTrackProperties.currentParserVersion

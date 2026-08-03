@@ -2,6 +2,7 @@
 
 import Foundation
 import OrderedCollections
+import SwiftTimecode
 
 /// Read-only video-technical fields (resolution, frame rate, codec, pixel aspect ratio,
 /// rotation, GPS location, device make/model/software, capture date), pre-formatted as
@@ -18,6 +19,7 @@ import OrderedCollections
 public struct VideoTechnicalProperties: Sendable, Hashable {
     public enum Key: String, CaseIterable, Sendable {
         case resolution = "Resolution"
+        case duration = "Duration"
         case frameRate = "Frame Rate"
         case codec = "Codec"
         case pixelAspectRatio = "Pixel Aspect Ratio"
@@ -35,6 +37,7 @@ public struct VideoTechnicalProperties: Sendable, Hashable {
         public var displayName: String {
             switch self {
             case .resolution: localized("Resolution")
+            case .duration: localized("Duration")
             case .frameRate: localized("Frame Rate")
             case .codec: localized("Codec")
             case .pixelAspectRatio: localized("Pixel Aspect Ratio")
@@ -50,6 +53,7 @@ public struct VideoTechnicalProperties: Sendable, Hashable {
 
     public var dictionary: OrderedDictionary<Key, String?> = [
         .resolution: nil,
+        .duration: nil,
         .frameRate: nil,
         .codec: nil,
         .pixelAspectRatio: nil,
@@ -68,6 +72,23 @@ public struct VideoTechnicalProperties: Sendable, Hashable {
     public var latitude: Double?
     public var longitude: Double?
 
+    /// A duration as SMPTE timecode, which is how an edit is actually specified.
+    ///
+    /// Falls back to seconds when the rate is not a standard one `Timecode` can represent — better
+    /// a coarse number than a blank row. `nil` only when there is no duration at all.
+    static func durationString(seconds: TimeInterval?, frameRate: TimecodeFrameRate?) -> String? {
+        guard let seconds, seconds.isFinite, seconds >= 0 else { return nil }
+
+        guard
+            let frameRate,
+            let timecode = try? Timecode(.realTime(seconds: seconds), at: frameRate)
+        else {
+            return String(format: "%.2f s", seconds)
+        }
+
+        return timecode.stringValue()
+    }
+
     public init() {}
 
     public init(videoTrack: VideoTrackProperties?, quickTimeUserData: QuickTimeUserData?) {
@@ -78,6 +99,10 @@ public struct VideoTechnicalProperties: Sendable, Hashable {
             if let frameRate = videoTrack.nominalFrameRate {
                 dictionary[.frameRate] = String(format: "%.2f fps", frameRate)
             }
+            dictionary[.duration] = Self.durationString(
+                seconds: videoTrack.duration,
+                frameRate: videoTrack.preciseFrameRate
+            )
             dictionary[.codec] = videoTrack.codec
             // nil means the container has no explicit PixelAspectRatio extension, which
             // implies 1:1 square pixels (the common case) rather than "unknown" — display

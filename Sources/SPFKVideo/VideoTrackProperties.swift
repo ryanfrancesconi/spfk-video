@@ -15,7 +15,8 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
     /// exist yet" from "this field is legitimately absent for this file" (e.g. `preciseFrameRate`
     /// is `nil` for plenty of freshly, fully parsed files whose exact rate doesn't match a
     /// standard-rate table entry).
-    public static let currentParserVersion = 1
+    /// 2: `duration` added, which anything cached under version 1 is missing.
+    public static let currentParserVersion = 2
 
     /// The schema version this value was populated at -- see `currentParserVersion`. Defaults
     /// to `nil` only when decoded from data that predates this field's existence; any value
@@ -48,6 +49,12 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
     /// standard rate, or detection fails.
     public var preciseFrameRate: TimecodeFrameRate?
 
+    /// Duration of the video track in seconds.
+    ///
+    /// The *track's* duration, not the container's — they differ when a sibling audio track runs
+    /// longer, which is common in phone video.
+    public var duration: TimeInterval?
+
     /// Video codec identifier (e.g. a four-character-code string like "avc1", "hvc1"),
     /// derived from `AVAssetTrack.formatDescriptions`.
     public var codec: String?
@@ -66,6 +73,7 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
         nominalFrameRate: Float? = nil,
         preciseFrameRate: TimecodeFrameRate? = nil,
         codec: String? = nil,
+        duration: TimeInterval? = nil,
         pixelAspectRatio: Double? = nil,
         rotationDegrees: Int? = nil,
         parserVersion: Int? = Self.currentParserVersion
@@ -75,6 +83,7 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
         self.nominalFrameRate = nominalFrameRate
         self.preciseFrameRate = preciseFrameRate
         self.codec = codec
+        self.duration = duration
         self.pixelAspectRatio = pixelAspectRatio
         self.rotationDegrees = rotationDegrees
         self.parserVersion = parserVersion
