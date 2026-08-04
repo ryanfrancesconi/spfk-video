@@ -26,6 +26,8 @@ public final class VideoTransport {
         case didSeek
         /// Playback reached the end of the segment.
         case reachedEnd
+        /// Output level or mute changed.
+        case volumeChanged
     }
 
     public var eventHandler: ((Event) -> Void)?
@@ -44,6 +46,28 @@ public final class VideoTransport {
             guard speed != oldValue else { return }
             guard isPlaying else { return }
             applySpeed()
+        }
+    }
+
+    /// Output level, 0...1.
+    ///
+    /// Clamped rather than trusted: `AVPlayer.volume` outside that range is undefined, and a slider
+    /// bound to a resizing view can hand over a value fractionally past either end.
+    public var volume: Float {
+        get { player.volume }
+        set {
+            player.volume = min(max(0, newValue), 1)
+            eventHandler?(.volumeChanged)
+        }
+    }
+
+    /// Silences output without disturbing ``volume``, so unmuting returns to the level the user set
+    /// rather than to whatever a slider was last dragged to.
+    public var isMuted: Bool {
+        get { player.isMuted }
+        set {
+            player.isMuted = newValue
+            eventHandler?(.volumeChanged)
         }
     }
 
