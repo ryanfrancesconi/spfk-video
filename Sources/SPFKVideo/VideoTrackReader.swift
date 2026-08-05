@@ -11,15 +11,25 @@ import SPFKBase
 /// failing the whole call, so a corrupt video track doesn't also suppress an otherwise
 /// readable QuickTime user-data block (and vice versa).
 public enum VideoTrackReader {
-    /// Reads both the video track's technical properties and its QuickTime user-data,
-    /// sharing a single `AVURLAsset` between the two reads.
+    /// Reads the video track's technical properties, its QuickTime user-data, and whether
+    /// AVFoundation can play the asset at all, sharing a single `AVURLAsset` across all three.
+    ///
+    /// `isPlayable` is a different question from whether either read succeeded. A container
+    /// AVFoundation cannot open — Matroska (`.mkv`) is the common one — yields `nil` for both
+    /// halves *and* `false` here, while an audio-only `.mov` yields a `nil` video track and
+    /// `true`. Only the flag distinguishes "this file cannot be played" from "this file has no
+    /// video track", and a caller showing a status icon needs the former.
+    ///
+    /// Folded into this call rather than offered separately so reading it costs no second
+    /// `AVURLAsset`: an import measures this once per video file.
     public static func read(
         from url: URL
-    ) async -> (videoTrack: VideoTrackProperties?, quickTimeUserData: QuickTimeUserData?) {
+    ) async -> (videoTrack: VideoTrackProperties?, quickTimeUserData: QuickTimeUserData?, isPlayable: Bool) {
         let asset = AVURLAsset(url: url)
+        let isPlayable = (try? await asset.load(.isPlayable)) ?? false
         let videoTrack = await readVideoTrack(asset: asset, url: url)
         let quickTimeUserData = await readQuickTimeUserData(asset: asset, url: url)
-        return (videoTrack, quickTimeUserData)
+        return (videoTrack, quickTimeUserData, isPlayable)
     }
 
     /// Whether the file at `url` actually carries a video track.
