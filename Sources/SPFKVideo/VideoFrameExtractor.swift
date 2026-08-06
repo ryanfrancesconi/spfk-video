@@ -23,6 +23,31 @@ public enum VideoFrameExtractor {
     /// this avoids forced I-frame decodes while keeping frames visually near their position.
     public static let defaultTolerance: TimeInterval = 0.3
 
+    /// Where in a video the poster frame is taken from: **the midpoint, uncapped.**
+    ///
+    /// This used to be `min(duration * 0.5, 2.0)`. The cap existed to avoid seeking deep into a
+    /// long video, and measurement on 2026-08-05 showed it was buying nothing: with
+    /// `AVAssetImageGenerator` at ``defaultTolerance``, seeking to 90% of a 211s H.264 clip took
+    /// **16 ms** against **23 ms** at 2% — flat in position, if anything cheaper deeper in. The
+    /// same held for a 4K HEVC clip (52–58 ms at every position) and for `ffmpeg -ss`, which seeks
+    /// by container index rather than scanning.
+    ///
+    /// What the cap *did* cost was correctness on anything longer than four seconds, which is the
+    /// overwhelming majority: of 400 real clips measured, 348 fell between 4 and 60 seconds and
+    /// every one of them was posted at exactly 2.0s. On feature-length video it was worse than
+    /// arbitrary — a 2h08m film returned its distributor's logo card, and frame zero returned
+    /// black.
+    ///
+    /// **Any poster-frame path must call this**, whatever extracts the picture — thumbnails
+    /// otherwise disagree between formats sitting next to each other in one list. It lives here
+    /// rather than beside either product's thumbnail cache because the paths that need it are in
+    /// different packages: TorchTag's cache extracts through `AVAssetImageGenerator`, ShadowTag's
+    /// Matroska preview through a demuxer, and only the rule is common to them.
+    public static func posterFrameTimestamp(duration: TimeInterval) -> TimeInterval {
+        guard duration > 0 else { return 0 }
+        return duration * 0.5
+    }
+
     /// Loads the duration of a video asset's own video track, independent of any sibling
     /// audio track's duration in the same container.
     ///
