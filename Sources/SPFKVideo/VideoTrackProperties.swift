@@ -67,6 +67,37 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
     /// video needs applied to preview right-side-up.
     public var rotationDegrees: Int?
 
+    /// The rate to render this track's timecode at.
+    ///
+    /// ``preciseFrameRate`` when the exact rational rate matched a standard one, otherwise the
+    /// standard rate nearest ``nominalFrameRate``. The fallback exists because a container can
+    /// state a real frame rate that no rational match will find: Matroska gives a frame duration in
+    /// whole nanoseconds, and 33333333ns is not exactly 1/30, so the exact matcher rejects a file
+    /// whose rate is plainly 30. Such a file still has a rate, and rendering its duration as raw
+    /// seconds is a display failure rather than an honest absence.
+    ///
+    /// Drop-frame variants are excluded: this describes a duration, not a position on a timeline,
+    /// and drop-frame only changes how positions are numbered.
+    public var timecodeFrameRate: TimecodeFrameRate? {
+        if let preciseFrameRate {
+            return preciseFrameRate
+        }
+
+        guard let nominalFrameRate, nominalFrameRate > 0 else { return nil }
+
+        let target = Double(nominalFrameRate)
+
+        let nearest = TimecodeFrameRate.allCases
+            .filter { !$0.isDrop }
+            .min { abs($0.rate.doubleValue - target) < abs($1.rate.doubleValue - target) }
+
+        // Tolerance rather than nearest-wins outright, so a genuinely non-standard rate reports
+        // nothing instead of being rounded into a neighbor it does not belong to.
+        guard let nearest, abs(nearest.rate.doubleValue - target) < 0.1 else { return nil }
+
+        return nearest
+    }
+
     public init(
         width: Int? = nil,
         height: Int? = nil,

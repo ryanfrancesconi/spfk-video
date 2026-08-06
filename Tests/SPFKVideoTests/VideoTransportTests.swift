@@ -261,10 +261,41 @@ struct VideoDurationDisplayTests {
         #expect(text.hasPrefix("00:01:01"))
     }
 
-    /// A rate SMPTE cannot represent falls back to seconds rather than leaving the row blank — a
-    /// coarse number beats nothing.
-    @Test func noFrameRateFallsBackToSeconds() {
-        #expect(VideoTechnicalProperties.durationString(seconds: 61.5, frameRate: nil) == "61.50 s")
+    /// Always timecode, never seconds. The column is a timecode column, so `61.50 s` sitting under
+    /// the same heading as `00:01:01:15` is a second unit in disguise — a zero timecode at least
+    /// reads in the units the column claims.
+    @Test func noFrameRateReadsAsAZeroTimecode() {
+        let text = VideoTechnicalProperties.durationString(seconds: 61.5, frameRate: nil)
+
+        #expect(text == "00:00:00:00")
+        #expect(text?.contains("s") == false)
+    }
+
+    /// A container that states an approximate rate still has a real one. Matroska gives a frame
+    /// duration in whole nanoseconds, so 33333333ns never matches 1/30 exactly and the precise
+    /// matcher returns nothing — without this the duration fell back to raw seconds for every
+    /// `.mkv`.
+    @Test func aNominalRateResolvesToTheNearestStandardRate() {
+        let approximate = VideoTrackProperties(nominalFrameRate: 23.98)
+        #expect(approximate.timecodeFrameRate == .fps23_976)
+
+        let thirty = VideoTrackProperties(nominalFrameRate: 30.0)
+        #expect(thirty.timecodeFrameRate == .fps30)
+    }
+
+    /// The precisely resolved rate wins when there is one — the nominal value is a lossy `Float`
+    /// and only stands in for a rate that could not be resolved exactly.
+    @Test func aPreciseRateTakesPriorityOverTheNominalOne() {
+        let properties = VideoTrackProperties(nominalFrameRate: 30.0, preciseFrameRate: .fps29_97)
+        #expect(properties.timecodeFrameRate == .fps29_97)
+    }
+
+    /// Nearest-within-tolerance, not nearest-wins: a rate that belongs to no standard reports
+    /// nothing rather than being rounded into a neighbor.
+    @Test func aGenuinelyNonStandardRateResolvesToNothing() {
+        #expect(VideoTrackProperties(nominalFrameRate: 7).timecodeFrameRate == nil)
+        #expect(VideoTrackProperties().timecodeFrameRate == nil)
+        #expect(VideoTrackProperties(nominalFrameRate: 0).timecodeFrameRate == nil)
     }
 
     /// Nothing to show when there is no duration, rather than a zero that reads as a real value.

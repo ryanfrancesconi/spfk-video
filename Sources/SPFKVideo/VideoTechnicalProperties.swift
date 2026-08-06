@@ -74,8 +74,10 @@ public struct VideoTechnicalProperties: Sendable, Hashable {
 
     /// A duration as SMPTE timecode, which is how an edit is actually specified.
     ///
-    /// Falls back to seconds when the rate is not a standard one `Timecode` can represent — better
-    /// a coarse number than a blank row. `nil` only when there is no duration at all.
+    /// Always timecode, never fractional seconds — the column is a timecode column, and a row
+    /// reading `7675.70 s` beside rows reading `02:07:55:03` is a different unit wearing the same
+    /// heading. A duration that cannot be expressed at a known rate reads as a zero timecode
+    /// instead. `nil`, leaving the row blank, only when there is no duration at all.
     static func durationString(seconds: TimeInterval?, frameRate: TimecodeFrameRate?) -> String? {
         guard let seconds, seconds.isFinite, seconds >= 0 else { return nil }
 
@@ -83,7 +85,7 @@ public struct VideoTechnicalProperties: Sendable, Hashable {
             let frameRate,
             let timecode = try? Timecode(.realTime(seconds: seconds), at: frameRate)
         else {
-            return String(format: "%.2f s", seconds)
+            return Timecode(.zero, at: .fps24).stringValue()
         }
 
         return timecode.stringValue()
@@ -101,7 +103,7 @@ public struct VideoTechnicalProperties: Sendable, Hashable {
             }
             dictionary[.duration] = Self.durationString(
                 seconds: videoTrack.duration,
-                frameRate: videoTrack.preciseFrameRate
+                frameRate: videoTrack.timecodeFrameRate
             )
             dictionary[.codec] = videoTrack.codec
             // nil means the container has no explicit PixelAspectRatio extension, which
