@@ -7,42 +7,27 @@ import SPFKBase
 
 /// Extracts still frames from a video asset at given timestamps.
 ///
-/// Built on `AVAssetImageGenerator` and `images(for:)`, Apple's native async sequence API.
-/// Wide-tolerance-by-default lets the generator pick the nearest already-decoded frame rather
-/// than forcing exact decoding, which is significantly faster for thumbnail and classification
-/// use cases that don't require frame-perfect accuracy.
+/// Wide tolerance by default, so the generator takes the nearest decoded frame instead of forcing
+/// an exact decode — much faster, and thumbnails do not need frame accuracy.
 ///
-/// The returned dictionary is keyed by the *requested* timestamp, not the actual extraction
-/// time. This means thumbnail grids driven by an evenly-spaced request array stay visually
-/// uniform regardless of how wide the tolerance window is.
+/// Keyed by the *requested* timestamp rather than the extracted one, so an evenly spaced request
+/// comes back evenly spaced however wide the tolerance.
 public enum VideoFrameExtractor {
     /// Maximum deviation before and after each requested time allowed during frame extraction.
     ///
-    /// 0.3 s matches the validated prior implementation and Apple's own guidance from
-    /// WWDC22 "Create a more responsive media app". At a typical 2 s sampling interval
-    /// this avoids forced I-frame decodes while keeping frames visually near their position.
+    /// 0.3 s follows Apple's guidance (WWDC22, "Create a more responsive media app"). At a 2 s
+    /// sampling interval it avoids forced I-frame decodes while staying visually near position.
     public static let defaultTolerance: TimeInterval = 0.3
 
     /// Where in a video the poster frame is taken from: **the midpoint, uncapped.**
     ///
-    /// This used to be `min(duration * 0.5, 2.0)`. The cap existed to avoid seeking deep into a
-    /// long video, and measurement on 2026-08-05 showed it was buying nothing: with
-    /// `AVAssetImageGenerator` at ``defaultTolerance``, seeking to 90% of a 211s H.264 clip took
-    /// **16 ms** against **23 ms** at 2% — flat in position, if anything cheaper deeper in. The
-    /// same held for a 4K HEVC clip (52–58 ms at every position) and for `ffmpeg -ss`, which seeks
-    /// by container index rather than scanning.
+    /// Uncapped because seeking deep costs nothing: at ``defaultTolerance``, 90% into a 211s H.264
+    /// clip took 16 ms against 23 ms at 2%, and a 4K HEVC clip was 52–58 ms at every position.
+    /// A cap costs correctness instead — of 400 clips measured, 348 ran 4 to 60 seconds and a 2.0s
+    /// cap posted every one of them at 2.0s, while a feature returned its distributor's logo card.
     ///
-    /// What the cap *did* cost was correctness on anything longer than four seconds, which is the
-    /// overwhelming majority: of 400 real clips measured, 348 fell between 4 and 60 seconds and
-    /// every one of them was posted at exactly 2.0s. On feature-length video it was worse than
-    /// arbitrary — a 2h08m film returned its distributor's logo card, and frame zero returned
-    /// black.
-    ///
-    /// **Any poster-frame path must call this**, whatever extracts the picture — thumbnails
-    /// otherwise disagree between formats sitting next to each other in one list. It lives here
-    /// rather than beside either product's thumbnail cache because the paths that need it are in
-    /// different packages: TorchTag's cache extracts through `AVAssetImageGenerator`, ShadowTag's
-    /// Matroska preview through a demuxer, and only the rule is common to them.
+    /// **Any poster-frame path must call this**, whatever extracts the picture, or thumbnails
+    /// disagree between formats sitting next to each other in a list.
     public static func posterFrameTimestamp(duration: TimeInterval) -> TimeInterval {
         guard duration > 0 else { return 0 }
         return duration * 0.5
