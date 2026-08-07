@@ -43,6 +43,8 @@ let frameAt3s = frames[3.0]  // CGImage?
 let duration = try await VideoFrameExtractor.duration(of: videoURL)
 ```
 
+**For a container that may not be AVFoundation-openable, call `VideoFrameExtractor.framesForAnyContainer` instead** — it lives in [spfk-matroska](https://github.com/ryanfrancesconi/spfk-matroska), which extends this type, and routes to the demuxer for `.mkv`/`.webm`/`.mka` while leaving everything else on the path below. A caller writing its own `if isMatroska` branch has missed it.
+
 `frames(from:at:maximumSize:tolerance:)` uses `AVAssetImageGenerator`'s `images(for:)` async sequence. Wide tolerance (0.3s default) lets the generator reuse the nearest already-decoded frame rather than forcing exact decoding — significantly faster for thumbnail and classification sampling that doesn't need frame-perfect accuracy. A timestamp whose frame fails to extract is simply absent from the result rather than failing the whole batch.
 
 ### Frame Caching
