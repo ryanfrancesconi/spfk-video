@@ -12,7 +12,7 @@ import Foundation
 ///
 /// Lives in `spfk-video` because both backends and both products must reach it. It cannot live in
 /// `spfk-matroska`: that package already depends on this one, so the edge back would be a cycle.
-public struct AudioTrackDescription: Hashable, Sendable, Identifiable {
+public struct AudioTrackDescription: Hashable, Sendable, Codable, Identifiable {
     /// A track's identity, stable across reopens of the same file.
     ///
     /// Matroska fills it from `TrackUID` and AVFoundation from `CMPersistentTrackID`, both of which
@@ -120,9 +120,10 @@ extension AudioTrackDescription {
     /// ``language`` as a reader's own language names it, or `nil` when it is absent or is a code
     /// `Locale` cannot resolve.
     ///
-    /// `und` — Matroska's default when a muxer states nothing — resolves to a real string
-    /// ("Unknown language"), which is worse than falling through to the codec, so it is refused
-    /// here.
+    /// `und` is refused: it resolves to a real string ("Unknown language"), which is worse than
+    /// falling through to the codec. It means a muxer said *undetermined* rather than said nothing —
+    /// ffmpeg writes it explicitly where an absent element means English (`spfk-matroska` applies
+    /// that default), so the two are different answers and only this one is an absence.
     public var localizedLanguage: String? {
         guard let language, language.isEmpty == false, language != "und" else { return nil }
 
