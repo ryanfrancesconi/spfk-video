@@ -76,8 +76,11 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
     /// whose rate is plainly 30. Such a file still has a rate, and rendering its duration as raw
     /// seconds is a display failure rather than an honest absence.
     ///
-    /// Drop-frame variants are excluded: this describes a duration, not a position on a timeline,
-    /// and drop-frame only changes how positions are numbered.
+    /// **Drop-frame is excluded from the fallback only.** `asset.timecodeFrameRate()` detects it, so
+    /// ``preciseFrameRate`` can be a drop rate and is returned as-is — which is what a *position*
+    /// readout wants, since drop-frame is how positions are numbered. The fallback cannot know:
+    /// `nominalFrameRate` is a bare fps and a container stating one carries no timecode track to
+    /// read drop from, so guessing would mislabel every 29.97 file one way or the other.
     public var timecodeFrameRate: TimecodeFrameRate? {
         if let preciseFrameRate {
             return preciseFrameRate
