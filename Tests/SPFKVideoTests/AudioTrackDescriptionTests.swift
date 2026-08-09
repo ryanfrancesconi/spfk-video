@@ -19,21 +19,33 @@ struct AudioTrackDescriptionTests {
         )
     }
 
-    /// A muxer that named a track said something a language code cannot, so the name wins even when
-    /// both are present.
-    @Test func prefersTheContainersOwnNameOverTheLanguage() {
+    /// Both, following VLC: the name says what a language code cannot, and the language separates
+    /// two tracks a muxer named in their own language.
+    @Test func showsTheNameAndTheLanguageTogether() {
         let track = description(name: "Director's Commentary", language: "eng")
 
-        #expect(track.displayName == "Director's Commentary")
+        #expect(track.displayName == "Director's Commentary - [English]")
     }
 
-    /// An empty `Name` is what a muxer writes for "no name", and it must not win the fallback chain
-    /// as a blank label.
+    /// A track named after its own language is the common case, and appending the language to it
+    /// reads as a stutter — the fixtures are exactly this shape.
+    @Test func doesNotRepeatALanguageThatIsAlreadyTheName() {
+        #expect(description(name: "English", language: "eng").displayName == "English")
+        #expect(description(name: "english", language: "eng").displayName == "english")
+    }
+
+    /// Either alone still labels the row.
+    @Test func fallsBackToWhicheverHalfExists() {
+        #expect(description(name: "Commentary").displayName == "Commentary")
+        #expect(description(language: "jpn").displayName == "Japanese")
+    }
+
+    /// An empty `Name` is what a muxer writes for "no name", and it must not put a stray separator
+    /// in front of the language.
     @Test func treatsAnEmptyNameAsAbsent() {
         let track = description(name: "", language: "jpn")
 
-        #expect(track.displayName == description(language: "jpn").displayName)
-        #expect(track.displayName.isEmpty == false)
+        #expect(track.displayName == "Japanese")
     }
 
     /// ISO-639-2 is what both containers write, and a bare `jpn` is not a label.

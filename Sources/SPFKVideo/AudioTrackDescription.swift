@@ -74,26 +74,47 @@ public struct AudioTrackDescription: Hashable, Sendable, Identifiable {
 // MARK: - Display
 
 extension AudioTrackDescription {
-    /// A label for a picker, which always has one: the container's name, else the language spelled
-    /// out, else the codec, else the identifier.
+    /// A label for a picker, which always has one.
     ///
-    /// The container's name wins even when a language is also present, because a muxer that
-    /// bothered to name a track said something a language code cannot — "Director's Commentary" is
-    /// `eng` too.
+    /// **Name and language together when both exist** — `Ingrisi KoTuWa - [English]` — following
+    /// VLC, which is what users of dual-audio files already read. Choosing one loses something
+    /// either way: a name says what a language code cannot ("Director's Commentary" is `eng` too),
+    /// while two tracks a muxer named in their own language are indistinguishable without it.
+    ///
+    /// Falls back through name, language, codec, identifier, so a row is never blank.
     public var displayName: String {
-        if let name, name.isEmpty == false {
-            return name
-        }
+        switch (trimmedName, localizedLanguage) {
+        case let (name?, language?):
+            // Naming a track after its own language is the common case by far — VLC's example
+            // reads well only because "Ingrisi KoTuWa" is exotic. Appending the language to a name
+            // that already is the language gives "English - [English]".
+            name.caseInsensitiveCompare(language) == .orderedSame
+                ? name
+                : "\(name) - [\(language)]"
 
-        if let localizedLanguage {
-            return localizedLanguage
-        }
+        case let (name?, nil):
+            name
 
-        if let codec, codec.isEmpty == false {
-            return codec
-        }
+        case let (nil, language?):
+            language
 
-        return "\(id.rawValue)"
+        case (nil, nil):
+            trimmedCodec ?? "\(id.rawValue)"
+        }
+    }
+
+    /// ``name`` with empty treated as absent — a muxer writes `""` for "no name", and a blank label
+    /// must not win the chain.
+    private var trimmedName: String? {
+        guard let name, name.isEmpty == false else { return nil }
+
+        return name
+    }
+
+    private var trimmedCodec: String? {
+        guard let codec, codec.isEmpty == false else { return nil }
+
+        return codec
     }
 
     /// ``language`` as a reader's own language names it, or `nil` when it is absent or is a code
