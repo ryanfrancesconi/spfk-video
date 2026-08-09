@@ -49,6 +49,11 @@ extension PlaybackSpeed {
     }
 
     /// The speeds an item can play, in ascending order.
+    ///
+    /// Never a single element by accident: an item that is ready always has ``normal``, so a
+    /// one-element result means *no other rate is possible* and a control offering the list has no
+    /// choice to present. An empty result means the item is not ready yet, which is a different
+    /// state and resolves on its own.
     public static func available(on item: AVPlayerItem) -> [PlaybackSpeed] {
         allCases.filter { $0.isAvailable(on: item) }
     }

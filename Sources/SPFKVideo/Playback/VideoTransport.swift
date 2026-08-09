@@ -28,6 +28,9 @@ public final class VideoTransport {
         case reachedEnd
         /// Output level or mute changed.
         case volumeChanged
+        /// The file's audio tracks finished loading. Separate from ``readyChanged`` because the
+        /// track read is asynchronous and lands after it.
+        case audioTracksChanged
     }
 
     public var eventHandler: ((Event) -> Void)?
@@ -116,8 +119,15 @@ public final class VideoTransport {
         player.replaceCurrentItem(with: item)
 
         statusObservation = item.observe(\.status, options: [.new]) { [weak self] _, _ in
-            MainActor.assumeIsolated { self?.eventHandler?(.readyChanged) }
+            MainActor.assumeIsolated {
+                // `item.tracks` is empty until the item is ready, so a selection made before this
+                // point had nothing to enable and is applied again here.
+                self?.applyAudioTrackSelection()
+                self?.eventHandler?(.readyChanged)
+            }
         }
+
+        loadAudioTracks(for: url)
 
         endObserver = NotificationCenter.default.addObserver(
             forName: AVPlayerItem.didPlayToEndTimeNotification,
@@ -139,6 +149,9 @@ public final class VideoTransport {
 
         player.replaceCurrentItem(with: nil)
         url = nil
+
+        // The selection itself survives, so loading a file that carries the same track restores it.
+        availableAudioTracks = []
     }
 
     // MARK: - State
@@ -168,6 +181,78 @@ public final class VideoTransport {
     public var availableSpeeds: [PlaybackSpeed] {
         guard let item = player.currentItem else { return [] }
         return PlaybackSpeed.available(on: item)
+    }
+
+    /// The speed the loaded item will actually be played at.
+    ///
+    /// Differs from ``speed`` only when the selection is one this item cannot manage, which is
+    /// deliberately kept rather than reset — see there. **This is what a readout should show**:
+    /// displaying the selection instead means a bar reading `0.25x` over a file playing at `1x`,
+    /// which is knowable the moment the item is ready rather than a surprise at the first press of
+    /// play.
+    public var effectiveSpeed: PlaybackSpeed {
+        guard let item = player.currentItem, speed.isAvailable(on: item) else {
+            return .normal
+        }
+
+        return speed
+    }
+
+    // MARK: - Audio tracks
+
+    /// The file's audio tracks. Empty until the read that ``load(url:)`` starts completes, which is
+    /// announced by ``Event/audioTracksChanged``.
+    public private(set) var availableAudioTracks: [AudioTrackDescription] = []
+
+    /// Which track is heard. `nil` leaves the file's own arrangement alone, which is what a
+    /// single-track file wants and what an untouched multi-track file falls back to.
+    ///
+    /// Kept as the *selection* even when the loaded item does not carry it, so switching to a file
+    /// that does resumes the user's intent — the same rule ``speed`` follows.
+    public var selectedAudioTrack: AudioTrackDescription.ID? {
+        didSet {
+            guard selectedAudioTrack != oldValue else { return }
+            applyAudioTrackSelection()
+        }
+    }
+
+    /// Enables exactly the selected audio track and disables the rest.
+    ///
+    /// `AVPlayerItemTrack.isEnabled` rather than `selectMediaOption(_:in:)`: an
+    /// `AVMediaSelectionOption` exposes no track identifier, so mapping a chosen track onto an
+    /// option means matching on display name or language — which two tracks of one language make
+    /// ambiguous. Per-track enabling keys on `trackID` and works whether or not the container
+    /// declares an audible group.
+    ///
+    /// Automatic media selection is turned off alongside, or AVFoundation re-picks by system
+    /// language on a file that does declare a group and overrides the choice.
+    private func applyAudioTrackSelection() {
+        guard let item = player.currentItem, let selectedAudioTrack else { return }
+
+        player.appliesMediaSelectionCriteriaAutomatically = false
+
+        let audioTracks = item.tracks.filter { $0.assetTrack?.mediaType == .audio }
+
+        // A selection naming no loaded track leaves the item alone rather than silencing every
+        // track — a stale choice should not make the file mute.
+        guard audioTracks.contains(where: { $0.matches(selectedAudioTrack) }) else { return }
+
+        for track in audioTracks {
+            track.isEnabled = track.matches(selectedAudioTrack)
+        }
+    }
+
+    /// Reads the file's audio tracks, then re-applies any standing selection to the new item.
+    private func loadAudioTracks(for url: URL) {
+        Task { [weak self] in
+            let tracks = await AudioTrackReader.read(from: url)
+
+            guard let self, self.url == url else { return }
+
+            availableAudioTracks = tracks
+            applyAudioTrackSelection()
+            eventHandler?(.audioTracksChanged)
+        }
     }
 
     // MARK: - Transport
@@ -241,11 +326,17 @@ public final class VideoTransport {
     private static let endEpsilon: TimeInterval = 1.0 / 60
 
     private func applySpeed() {
-        guard let item = player.currentItem, speed.isAvailable(on: item) else {
-            player.playImmediately(atRate: PlaybackSpeed.normal.rate)
-            return
-        }
+        player.playImmediately(atRate: effectiveSpeed.rate)
+    }
+}
 
-        player.playImmediately(atRate: speed.rate)
+private extension AVPlayerItemTrack {
+    /// Whether this is the track a neutral identifier names.
+    ///
+    /// `AudioTrackReader` builds its identifiers from the same `trackID`, which is what lets a
+    /// listing made off the asset address a track on a live player item.
+    func matches(_ id: AudioTrackDescription.ID) -> Bool {
+        guard let assetTrack else { return false }
+        return AudioTrackDescription.ID(persistentTrackID: assetTrack.trackID) == id
     }
 }
