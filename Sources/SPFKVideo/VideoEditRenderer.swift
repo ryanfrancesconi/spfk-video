@@ -192,7 +192,17 @@ public actor VideoEditRenderer {
         let sourceTypes = try await asset.load(.tracks).map(\.mediaType)
         let outputTypes = try await AVURLAsset(url: url).load(.tracks).map(\.mediaType)
 
-        let missing = Self.missingEssentialTracks(source: sourceTypes, output: outputTypes)
+        var missing = Self.missingEssentialTracks(source: sourceTypes, output: outputTypes)
+
+        // A track list is not the only reading of a file's audio, and where the two disagree this
+        // comparison is blind: the export carries over what `AVURLAsset` lists, so a track absent
+        // from the source's list is absent from both sides and counts as nothing missing.
+        // ``hasDecodableAudio(at:)`` is the second opinion.
+        if missing.isEmpty,
+           Self.hasDecodableAudio(at: sourceURL),
+           !Self.hasDecodableAudio(at: url) {
+            missing = [.audio]
+        }
 
         guard missing.isEmpty else {
             try? FileManager.default.removeItem(at: url)
@@ -201,6 +211,17 @@ public actor VideoEditRenderer {
                 missing: missing.map { $0 == .audio ? "audio" : "video" }
             )
         }
+    }
+
+    /// Whether the file's audio decodes, which is not the same question as whether `AVURLAsset`
+    /// lists an audio track.
+    ///
+    /// The two readings come from different parsers and disagree on a malformed container: a trak
+    /// AVFoundation's asset parser rejects can still open through `AVAudioFile`. Use this wherever
+    /// "does this file have audio to lose" has to be answered about a file whose track list may
+    /// not be trustworthy.
+    public static func hasDecodableAudio(at url: URL) -> Bool {
+        ((try? AVAudioFile(forReading: url))?.length ?? 0) > 0
     }
 
     /// Which of audio and video came out with fewer tracks than went in.
