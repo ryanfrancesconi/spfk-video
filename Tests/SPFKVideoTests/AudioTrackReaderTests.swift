@@ -22,6 +22,21 @@ struct AudioTrackReaderTests {
         #expect(tracks.allSatisfy { $0.sampleRate == 44100 })
     }
 
+    /// **An audio container, not a movie.** An `.m4a` carries alternate tracks exactly as its `.mp4`
+    /// sibling does, so anything that lists tracks only for video files leaves this one with no
+    /// picker at all.
+    ///
+    /// The fixture states no track names, so the rows come from the language codes alone.
+    @Test func readsBothTracksOfADualAudioMPEG4AudioFile() async {
+        let tracks = await AudioTrackReader.read(from: TestBundleResources.shared.dualaudio_m4a)
+
+        #expect(tracks.count == 2)
+        #expect(tracks.map(\.language) == ["eng", "jpn"])
+        #expect(tracks.map(\.name) == [nil, nil])
+        #expect(tracks.map(\.displayName) == ["English", "Japanese"])
+        #expect(tracks.allSatisfy { $0.codec == "aac" })
+    }
+
     /// Distinct identifiers are what makes a selection addressable at all; equal ones would silently
     /// select the first match every time.
     @Test func givesEachTrackItsOwnIdentifier() async {
