@@ -23,6 +23,13 @@ public enum VideoEditError: Error {
 
     /// The export was cancelled via ``VideoEditRenderer/cancel()`` or task cancellation.
     case cancelled
+
+    /// The export completed but the result is missing audio or video the source had.
+    ///
+    /// A passthrough export drops a track the destination container cannot hold and still reports
+    /// success, so this is the only signal that the render is not a faithful copy. Callers replace
+    /// the user's original with the render, which makes the loss permanent and silent.
+    case tracksLost(URL, missing: [String])
 }
 
 // MARK: - LocalizedError
@@ -50,6 +57,9 @@ extension VideoEditError: LocalizedError {
 
         case .cancelled:
             "The render was cancelled"
+
+        case let .tracksLost(url, missing):
+            "Rendering \(url.lastPathComponent) would have dropped its \(missing.joined(separator: " and ")) — the file was left unchanged"
         }
     }
 }

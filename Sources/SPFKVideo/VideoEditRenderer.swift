@@ -118,6 +118,8 @@ public actor VideoEditRenderer {
             throw Self.renderError(from: error, sourceURL: sourceURL)
         }
 
+        try await verifyTracksSurvived(from: asset, to: outputURL)
+
         return outputURL
     }
 
@@ -179,6 +181,40 @@ public actor VideoEditRenderer {
             return .cancelled
         }
         return .exportFailed(sourceURL, underlying: error)
+    }
+
+    /// Throws unless the render still carries the audio and video the source had.
+    ///
+    /// A passthrough export writes what the destination container accepts and reports `.completed`
+    /// either way, so a dropped track arrives as success. The caller's next step is to replace the
+    /// user's original with this file, which is the point of no return.
+    private func verifyTracksSurvived(from asset: AVURLAsset, to url: URL) async throws {
+        let sourceTypes = try await asset.load(.tracks).map(\.mediaType)
+        let outputTypes = try await AVURLAsset(url: url).load(.tracks).map(\.mediaType)
+
+        let missing = Self.missingEssentialTracks(source: sourceTypes, output: outputTypes)
+
+        guard missing.isEmpty else {
+            try? FileManager.default.removeItem(at: url)
+            throw VideoEditError.tracksLost(
+                sourceURL,
+                missing: missing.map { $0 == .audio ? "audio" : "video" }
+            )
+        }
+    }
+
+    /// Which of audio and video came out with fewer tracks than went in.
+    ///
+    /// Only those two are checked. Timecode, metadata and text tracks are routinely dropped by a
+    /// passthrough export — a GoPro's `tmcd` and `gpmd` do not survive one — and refusing those
+    /// renders would block ordinary edits to protect data the container was never going to keep.
+    public static func missingEssentialTracks(
+        source: [AVMediaType],
+        output: [AVMediaType]
+    ) -> [AVMediaType] {
+        [.audio, .video].filter { type in
+            output.filter { $0 == type }.count < source.filter { $0 == type }.count
+        }
     }
 
     /// Resolves the trim's seconds against the asset's real duration.

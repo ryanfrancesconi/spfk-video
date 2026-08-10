@@ -10,6 +10,110 @@ import Testing
 
 @Suite
 final class VideoEditRendererTests {
+    // MARK: - Track survival
+
+    /// **A render that lost the audio must not be handed back.** A passthrough export writes what
+    /// the destination container accepts and reports success either way, and the caller replaces
+    /// the user's original with the result — so a dropped track is permanent, silent data loss.
+    @Test func aDroppedAudioTrackIsDetected() {
+        let missing = VideoEditRenderer.missingEssentialTracks(
+            source: [.video, .audio, .timecode],
+            output: [.video, .timecode]
+        )
+
+        #expect(missing == [.audio])
+    }
+
+    @Test func aDroppedVideoTrackIsDetected() {
+        let missing = VideoEditRenderer.missingEssentialTracks(
+            source: [.video, .audio],
+            output: [.audio]
+        )
+
+        #expect(missing == [.video])
+    }
+
+    /// Losing one of several audio tracks counts. A file with commentary or a dub comes back
+    /// looking playable, and only the extra track is gone.
+    @Test func losingOneOfSeveralAudioTracksIsDetected() {
+        let missing = VideoEditRenderer.missingEssentialTracks(
+            source: [.video, .audio, .audio],
+            output: [.video, .audio]
+        )
+
+        #expect(missing == [.audio])
+    }
+
+    /// Timecode, telemetry and text tracks are dropped by every passthrough export — a GoPro's
+    /// `tmcd` and `gpmd` do not survive one. Refusing those renders would block ordinary edits to
+    /// protect data the container was never going to keep.
+    @Test func droppingNonEssentialTracksIsAllowed() {
+        let missing = VideoEditRenderer.missingEssentialTracks(
+            source: [.video, .audio, .timecode, .metadata, .text],
+            output: [.video, .audio]
+        )
+
+        #expect(missing.isEmpty)
+    }
+
+    @Test func anUnchangedTrackSetPasses() {
+        let missing = VideoEditRenderer.missingEssentialTracks(
+            source: [.video, .audio],
+            output: [.video, .audio]
+        )
+
+        #expect(missing.isEmpty)
+    }
+
+    /// The guard has to stay quiet on the ordinary path, or it trades silent loss for a render
+    /// nobody can complete.
+    @Test func arealRenderPassesTheGuard() async throws {
+        let source = try await Self.videoWithAudio(duration: 8)
+        defer { try? FileManager.default.removeItem(at: source) }
+
+        let output = try await Self.render(source, TrimDescription(inPoint: 2, outPoint: 5))
+        defer { try? FileManager.default.removeItem(at: output) }
+
+        let tracks = try await AVURLAsset(url: output).load(.tracks).map(\.mediaType)
+        #expect(tracks.contains(.audio))
+        #expect(tracks.contains(.video))
+    }
+
+    /// End to end: an export that really does drop a track must throw rather than return a URL,
+    /// and must not leave the partial render behind for a caller to swap in.
+    @Test func aRenderThatDropsATrackThrows() async throws {
+        let source = try await Self.videoWithAudio(duration: 8)
+        defer { try? FileManager.default.removeItem(at: source) }
+
+        // An audio-only container cannot carry the video track, so the export drops it and still
+        // reports success — the same shape as a container that cannot carry the audio.
+        let output = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("m4a")
+        defer { try? FileManager.default.removeItem(at: output) }
+
+        let renderer = VideoEditRenderer(
+            sourceURL: source,
+            trim: TrimDescription(inPoint: 0, outPoint: 5),
+            outputURL: output
+        )
+
+        // Specifically `.tracksLost`: `.unsupportedOutputContainer` is also a `VideoEditError`, and
+        // accepting it would let this pass with the guard deleted.
+        do {
+            _ = try await renderer.render()
+            Issue.record("render returned instead of throwing")
+        } catch let error as VideoEditError {
+            guard case let .tracksLost(_, missing) = error else {
+                Issue.record("expected .tracksLost, got \(error)")
+                return
+            }
+            #expect(missing == ["video"])
+        }
+
+        #expect(!FileManager.default.fileExists(atPath: output.path), "partial render left behind")
+    }
+
     // MARK: - Trimming
 
     @Test func producesTheRequestedDuration() async throws {
