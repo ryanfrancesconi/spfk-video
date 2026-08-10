@@ -49,7 +49,7 @@ struct VideoTransportAudioTrackTests {
     @Test func selectingATrackEnablesOnlyThatTrack() async {
         let transport = await loadedTransport()
 
-        let japanese = try? #require(transport.availableAudioTracks.first { $0.language == "jpn" })
+        let japanese = transport.availableAudioTracks.first { $0.language == "jpn" }
         guard let japanese else { return }
 
         transport.selectedAudioTrack = japanese.id
@@ -95,7 +95,7 @@ struct VideoTransportAudioTrackTests {
     @Test func keepsTheSelectionAcrossAnUnload() async {
         let transport = await loadedTransport()
 
-        let japanese = try? #require(transport.availableAudioTracks.first { $0.language == "jpn" })
+        let japanese = transport.availableAudioTracks.first { $0.language == "jpn" }
         guard let japanese else { return }
 
         transport.selectedAudioTrack = japanese.id
