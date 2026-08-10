@@ -150,6 +150,72 @@ struct VideoTransportTests {
 
         #expect(events.contains(.didSeek))
     }
+
+    // MARK: - Seek coalescing
+
+    /// A drag emits a seek per mouse-move, far faster than `AVPlayer` can serve them. Issuing each
+    /// one cancels the one before it mid-flight. The last position asked for still has to be the
+    /// one it lands on.
+    @Test func aBurstOfSeeksLandsOnTheLastPosition() async {
+        let transport = await loadedTransport()
+        guard transport.isReady else {
+            Issue.record("item never became ready")
+            return
+        }
+
+        for time in stride(from: 0.1, through: 1.0, by: 0.1) {
+            transport.seek(to: time)
+        }
+
+        let deadline = Date().addingTimeInterval(5)
+        while Date() < deadline, abs(transport.currentTime - 1.0) > 0.05 {
+            try? await Task.sleep(for: .milliseconds(25))
+        }
+
+        #expect(abs(transport.currentTime - 1.0) < 0.05, "settled at \(transport.currentTime)")
+    }
+
+    /// Reported once the playhead settles rather than at every waypoint — a playhead seed rebuilt
+    /// against a superseded position is stale before it is used.
+    @Test func aBurstOfSeeksReportsFewerCompletionsThanRequests() async {
+        let transport = await loadedTransport()
+        guard transport.isReady else {
+            Issue.record("item never became ready")
+            return
+        }
+
+        var seekCount = 0
+        transport.eventHandler = { if $0 == .didSeek { seekCount += 1 } }
+
+        let requests = 10
+        for time in stride(from: 0.1, through: 1.0, by: 0.1) {
+            transport.seek(to: time)
+        }
+
+        let deadline = Date().addingTimeInterval(5)
+        while Date() < deadline, seekCount == 0 {
+            try? await Task.sleep(for: .milliseconds(25))
+        }
+
+        #expect(seekCount > 0)
+        #expect(seekCount < requests, "\(seekCount) completions for \(requests) requests")
+    }
+
+    /// A seek waiting on the outgoing item names a position in a file that is gone.
+    @Test func unloadingDropsAPendingSeek() async {
+        let transport = await loadedTransport()
+        guard transport.isReady else {
+            Issue.record("item never became ready")
+            return
+        }
+
+        transport.seek(to: 0.5)
+        transport.seek(to: 1.0) // superseded, still pending
+        transport.unload()
+
+        #expect(transport.seekCoalescer.hasPendingSeek == false)
+        #expect(transport.seekCoalescer.isSeeking == false)
+    }
 }
 
 // MARK: -

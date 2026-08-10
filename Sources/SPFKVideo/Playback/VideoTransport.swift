@@ -86,6 +86,8 @@ public final class VideoTransport {
     public init() {
         player.actionAtItemEnd = .pause
 
+        seekCoalescer.onSettled = { [weak self] in self?.eventHandler?(.didSeek) }
+
         rateObservation = player.observe(\.rate, options: [.new, .old]) { [weak self] _, change in
             guard change.newValue != change.oldValue else { return }
             MainActor.assumeIsolated { self?.eventHandler?(.rateChanged) }
@@ -149,6 +151,9 @@ public final class VideoTransport {
 
         player.replaceCurrentItem(with: nil)
         url = nil
+
+        // A seek waiting on the outgoing item names a position in a file that is gone.
+        seekCoalescer.cancelPending()
 
         // The selection itself survives, so loading a file that carries the same track restores it.
         availableAudioTracks = []
@@ -308,16 +313,17 @@ public final class VideoTransport {
         seek(to: currentTime + seconds)
     }
 
+    /// A drag emits one seek per mouse-move, faster than `AVPlayer` can serve them. See
+    /// ``AVPlayerSeekCoalescer``.
+    let seekCoalescer = AVPlayerSeekCoalescer()
+
     public func seek(to time: TimeInterval, precise: Bool = true) {
         guard isReady else { return }
 
         let clamped = min(max(0, time), duration)
         let target = CMTime(seconds: clamped, preferredTimescale: 600)
-        let tolerance = precise ? CMTime.zero : CMTime.positiveInfinity
 
-        player.seek(to: target, toleranceBefore: tolerance, toleranceAfter: tolerance) { [weak self] _ in
-            MainActor.assumeIsolated { self?.eventHandler?(.didSeek) }
-        }
+        seekCoalescer.seek(player, to: target, tolerance: precise ? .zero : .positiveInfinity)
     }
 
     // MARK: - Private
