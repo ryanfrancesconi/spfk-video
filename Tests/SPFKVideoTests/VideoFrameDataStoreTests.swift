@@ -121,6 +121,32 @@ final class VideoFrameDataStoreTests: BinTestCase {
         #expect(full1 == nil)
     }
 
+    // MARK: - deleteAll
+
+    /// The manual "Empty Cache" control. The root directory has to survive, or the store is left
+    /// unusable until it is reconstructed.
+    @Test func deleteAllEmptiesEveryVideoAndKeepsTheRoot() async throws {
+        deleteBinOnExit = true
+        let store = try VideoFrameDataStore(inDirectory: bin)
+        let first = fakeURL(index: 20)
+        let second = fakeURL(index: 21)
+
+        try await store.insert(.thumbnail, cgImage: syntheticImage(), timestamp: 1.0, for: first)
+        try await store.insert(.fullQuality, cgImage: syntheticImage(), timestamp: 2.0, for: first)
+        try await store.insert(.thumbnail, cgImage: syntheticImage(), timestamp: 1.0, for: second)
+
+        await store.deleteAll()
+
+        let count = await store.count()
+        #expect(count == 0)
+        #expect(FileManager.default.fileExists(atPath: store.directoryURL.path))
+
+        // And it still works afterwards, rather than silently failing every later insert.
+        try await store.insert(.thumbnail, cgImage: syntheticImage(), timestamp: 1.0, for: first)
+        let refetched = await store.fetch(.thumbnail, timestamp: 1.0, for: first)
+        #expect(refetched != nil)
+    }
+
     // MARK: - prune
 
     @Test func pruneRemovesWholeSubdirectoryForInactiveVideosOnly() async throws {

@@ -132,6 +132,29 @@ extension VideoFrameDataStore {
         return removedCount
     }
 
+    /// Removes every cached frame for every video, leaving the root directory in place.
+    ///
+    /// The manual "Empty Cache" control's counterpart to `prune(activeKeys:)`'s automatic
+    /// housekeeping — everything goes, and each video re-extracts the next time it is shown.
+    public func deleteAll() {
+        let fm = FileManager.default
+        guard let fileDirs = try? fm.contentsOfDirectory(
+            at: directoryURL,
+            includingPropertiesForKeys: [.isDirectoryKey]
+        ) else {
+            return
+        }
+
+        for dir in fileDirs {
+            guard (try? dir.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true else { continue }
+            do {
+                try fm.removeItem(at: dir)
+            } catch {
+                Log.error("Failed to delete video frame cache: \(dir.lastPathComponent)", error)
+            }
+        }
+    }
+
     /// Total number of cached frames (both tiers, across every video).
     ///
     /// Not currently called in production — kept for diagnostics/debugging and to mirror
