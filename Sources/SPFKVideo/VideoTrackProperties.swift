@@ -7,16 +7,24 @@ import SwiftTimecode
 /// rotation), read via AVFoundation (`AVAssetTrack`) rather than TagLib — these are
 /// stream-technical facts, not tags. `nil` for pure-audio files.
 public struct VideoTrackProperties: Hashable, Sendable, Codable {
-    /// Current schema version `VideoTrackReader` populates. Bump this whenever
-    /// `VideoTrackReader`'s video-track read starts populating a field it didn't populate
-    /// before. `parserVersion < currentParserVersion` (see `isOutdated`) then reliably flags a
-    /// value that was cached under an older reader and needs re-deriving from the source file --
-    /// unlike checking individual fields' nil-ness, which can't distinguish "this field didn't
-    /// exist yet" from "this field is legitimately absent for this file" (e.g. `preciseFrameRate`
-    /// is `nil` for plenty of freshly, fully parsed files whose exact rate doesn't match a
-    /// standard-rate table entry).
+    /// Current schema version `VideoTrackReader` populates. Bump this whenever a video-track read
+    /// starts populating something it didn't before — a field on this type, or one of the sibling
+    /// flags the same `loadVideoTrack()` call writes. `parserVersion < currentParserVersion` (see
+    /// `isOutdated`) then reliably flags a value that was cached under an older reader and needs
+    /// re-deriving from the source file -- unlike checking individual fields' nil-ness, which can't
+    /// distinguish "this field didn't exist yet" from "this field is legitimately absent for this
+    /// file" (e.g. `preciseFrameRate` is `nil` for plenty of freshly, fully parsed files whose
+    /// exact rate doesn't match a standard-rate table entry).
+    ///
+    /// **This is the only thing that repairs already-imported elements**, so a fix to what a read
+    /// records is not finished until this is bumped: the parser change alone reaches new files
+    /// only, and every existing library keeps the stale value forever.
+    ///
     /// 2: `duration` added, which anything cached under version 1 is missing.
-    public static let currentParserVersion = 2
+    /// 3: nothing new on this type. `isDecodable` — whether the Matroska demuxer can decode a
+    ///    container AVFoundation will not open — was never set on the import path, so every
+    ///    Matroska element cached before this reads as unplayable however well it plays.
+    public static let currentParserVersion = 3
 
     /// The schema version this value was populated at -- see `currentParserVersion`. Defaults
     /// to `nil` only when decoded from data that predates this field's existence; any value
