@@ -19,7 +19,7 @@ import SwiftTimecode
 public struct VideoTechnicalProperties: Sendable, Hashable {
     public enum Key: String, CaseIterable, Sendable {
         case resolution = "Resolution"
-        case duration = "Duration"
+        case duration = "Video Duration"
         case frameRate = "Frame Rate"
         case codec = "Codec"
         case pixelAspectRatio = "Pixel Aspect Ratio"
@@ -37,7 +37,7 @@ public struct VideoTechnicalProperties: Sendable, Hashable {
         public var displayName: String {
             switch self {
             case .resolution: localized("Resolution")
-            case .duration: localized("Duration")
+            case .duration: localized("Video Duration")
             case .frameRate: localized("Frame Rate")
             case .codec: localized("Codec")
             case .pixelAspectRatio: localized("Pixel Aspect Ratio")
