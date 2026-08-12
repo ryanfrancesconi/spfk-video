@@ -44,6 +44,27 @@ struct VideoTechnicalPropertiesTests {
         #expect((properties.dictionary[.resolution] ?? nil) == nil)
     }
 
+    @Test func showsTheTimecodeTrackStartValue() {
+        let videoTrack = VideoTrackProperties(
+            preciseFrameRate: .fps29_97d,
+            startTimecodeString: "01:00:00;01"
+        )
+        let properties = VideoTechnicalProperties(videoTrack: videoTrack, quickTimeUserData: nil)
+
+        #expect(properties.dictionary[.startTimecode] == "01:00:00;01")
+    }
+
+    /// Unlike a duration, which exists whether or not it can be expressed at a known rate, a
+    /// container with no timecode track states no start at all — so the row is blank rather than
+    /// falling back to a zero timecode the file never claimed.
+    @Test func startTimecodeStaysNilWithoutATimecodeTrack() {
+        let videoTrack = VideoTrackProperties(nominalFrameRate: 29.97, duration: 120)
+        let properties = VideoTechnicalProperties(videoTrack: videoTrack, quickTimeUserData: nil)
+
+        #expect((properties.dictionary[.startTimecode] ?? nil) == nil)
+        #expect(properties.dictionary[.duration] != nil)
+    }
+
     @Test func formatsFrameRateToTwoDecimalPlaces() {
         let videoTrack = VideoTrackProperties(nominalFrameRate: 29.97)
         let properties = VideoTechnicalProperties(videoTrack: videoTrack, quickTimeUserData: nil)

@@ -19,6 +19,7 @@ import SwiftTimecode
 public struct VideoTechnicalProperties: Sendable, Hashable {
     public enum Key: String, CaseIterable, Sendable {
         case resolution = "Resolution"
+        case startTimecode = "Start Timecode"
         case duration = "Video Duration"
         case frameRate = "Frame Rate"
         case codec = "Codec"
@@ -37,6 +38,7 @@ public struct VideoTechnicalProperties: Sendable, Hashable {
         public var displayName: String {
             switch self {
             case .resolution: localized("Resolution")
+            case .startTimecode: localized("Start Timecode")
             case .duration: localized("Video Duration")
             case .frameRate: localized("Frame Rate")
             case .codec: localized("Codec")
@@ -53,6 +55,7 @@ public struct VideoTechnicalProperties: Sendable, Hashable {
 
     public var dictionary: OrderedDictionary<Key, String?> = [
         .resolution: nil,
+        .startTimecode: nil,
         .duration: nil,
         .frameRate: nil,
         .codec: nil,
@@ -101,6 +104,13 @@ public struct VideoTechnicalProperties: Sendable, Hashable {
             if let frameRate = videoTrack.timecodeFrameRate {
                 dictionary[.frameRate] = frameRate.stringValueVerbose
             }
+            // The `tmcd` track's own value, and only that — this type reports what the video
+            // stream states. A file's *effective* start can come from XMP, `bext` or an INFO tag
+            // instead, which is `MetaAudioFileDescription.resolvedStartTimecode`'s job; wiring that
+            // in here would put a value the stream never carried under a stream-technical heading.
+            // Blank rather than a zero timecode when absent, since a container with no timecode
+            // track states no start at all — unlike a duration, which exists either way.
+            dictionary[.startTimecode] = videoTrack.startTimecode?.stringValue()
             dictionary[.duration] = Self.durationString(
                 seconds: videoTrack.duration,
                 frameRate: videoTrack.timecodeFrameRate
