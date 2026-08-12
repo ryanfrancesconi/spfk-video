@@ -98,8 +98,8 @@ public struct VideoTechnicalProperties: Sendable, Hashable {
             if let width = videoTrack.width, let height = videoTrack.height {
                 dictionary[.resolution] = "\(width) \u{00D7} \(height)"
             }
-            if let frameRate = videoTrack.nominalFrameRate {
-                dictionary[.frameRate] = String(format: "%.2f fps", frameRate)
+            if let frameRate = videoTrack.timecodeFrameRate {
+                dictionary[.frameRate] = frameRate.stringValueVerbose
             }
             dictionary[.duration] = Self.durationString(
                 seconds: videoTrack.duration,
