@@ -91,10 +91,10 @@ extension VideoFrameDataStore {
 
     /// Removes every cached frame (both tiers, all timestamps) for the given video.
     ///
-    /// Not currently called in production — `prune(activeURLs:)`/`prune(activeKeys:)` handle
-    /// the app's actual cache-eviction path. Kept as public API for explicit single-video
-    /// invalidation (e.g. "re-extract this video's thumbnails"), mirroring the equivalent
-    /// method on sibling stores (`ImageDataStore`, `WaveformDataStore`).
+    /// Single-video invalidation, reached through `deleteVideoFrames(for:)` when a file is saved
+    /// over or rewritten externally — frames are keyed by URL and timestamp with no freshness
+    /// check, so the cache would otherwise keep serving the previous edit's timeline.
+    /// `prune(activeURLs:)`/`prune(activeKeys:)` handle bulk eviction instead.
     public func delete(url: URL) {
         try? FileManager.default.removeItem(at: fileDirectory(for: url.sha256))
     }
