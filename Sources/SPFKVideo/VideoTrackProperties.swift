@@ -24,7 +24,9 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
     /// 3: nothing new on this type. `isDecodable` — whether the Matroska demuxer can decode a
     ///    container AVFoundation will not open — was never set on the import path, so every
     ///    Matroska element cached before this reads as unplayable however well it plays.
-    public static let currentParserVersion = 3
+    /// 4: `startTimecodeString` added — the `tmcd` track's start value, which the reader
+    ///    previously discarded while keeping only the frame rate it resolved alongside.
+    public static let currentParserVersion = 4
 
     /// The schema version this value was populated at -- see `currentParserVersion`. Defaults
     /// to `nil` only when decoded from data that predates this field's existence; any value
@@ -62,6 +64,31 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
     /// The *track's* duration, not the container's — they differ when a sibling audio track runs
     /// longer, which is common in phone video.
     public var duration: TimeInterval?
+
+    /// The `tmcd` track's start timecode, verbatim (e.g. `01:00:00;01`). `nil` for a container
+    /// with no timecode track.
+    ///
+    /// Stored as its string form because `Timecode` is not `Codable` and this value is cached
+    /// alongside the rest of this type. The frame separator carries the drop flag, so the string
+    /// is lossless where a bare frame count would not be — see ``startTimecode``.
+    public var startTimecodeString: String?
+
+    /// ``startTimecodeString`` parsed at ``timecodeFrameRate``.
+    ///
+    /// `nil` when either is absent, or when the stored string does not express a valid position at
+    /// that rate — a mismatch that means the two were read from files with different rates, not
+    /// something to render approximately.
+    public var startTimecode: Timecode? {
+        guard let startTimecodeString, let timecodeFrameRate else { return nil }
+
+        guard let timecode = try? Timecode(.string(startTimecodeString), at: timecodeFrameRate),
+              timecode.invalidComponents.isEmpty
+        else {
+            return nil
+        }
+
+        return timecode
+    }
 
     /// Video codec identifier (e.g. a four-character-code string like "avc1", "hvc1"),
     /// derived from `AVAssetTrack.formatDescriptions`.
@@ -116,6 +143,7 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
         preciseFrameRate: TimecodeFrameRate? = nil,
         codec: String? = nil,
         duration: TimeInterval? = nil,
+        startTimecodeString: String? = nil,
         pixelAspectRatio: Double? = nil,
         rotationDegrees: Int? = nil,
         parserVersion: Int? = Self.currentParserVersion
@@ -126,6 +154,7 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
         self.preciseFrameRate = preciseFrameRate
         self.codec = codec
         self.duration = duration
+        self.startTimecodeString = startTimecodeString
         self.pixelAspectRatio = pixelAspectRatio
         self.rotationDegrees = rotationDegrees
         self.parserVersion = parserVersion

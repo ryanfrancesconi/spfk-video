@@ -4,6 +4,7 @@ import AVFoundation
 import CoreMedia
 import Foundation
 import SPFKBase
+import SwiftTimecode
 
 /// AVFoundation-based reader for video-technical and QuickTime user-data properties.
 ///
@@ -72,6 +73,11 @@ public enum VideoTrackReader {
             // Float above. nil when the real rate doesn't match a known standard rate.
             let preciseFrameRate = try? await asset.timecodeFrameRate()
 
+            // The `tmcd` track's start value. Read at `preciseFrameRate` so the two agree by
+            // construction; passing nil lets the call detect the rate a second time, which can
+            // land somewhere else and yield a string this file's rate cannot express.
+            let startTimecode = try? await asset.startTimecode(at: preciseFrameRate)
+
             return VideoTrackProperties(
                 width: Int(naturalSize.width),
                 height: Int(naturalSize.height),
@@ -79,6 +85,7 @@ public enum VideoTrackReader {
                 preciseFrameRate: preciseFrameRate,
                 codec: codec,
                 duration: CMTimeGetSeconds(trackDuration),
+                startTimecodeString: startTimecode?.stringValue(),
                 pixelAspectRatio: pixelAspectRatio,
                 rotationDegrees: rotationDegrees(from: transform),
                 parserVersion: VideoTrackProperties.currentParserVersion
