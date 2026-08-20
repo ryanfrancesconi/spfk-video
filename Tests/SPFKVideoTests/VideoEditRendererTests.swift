@@ -197,16 +197,13 @@ final class VideoEditRendererTests {
         #expect(after.height == before.height)
         #expect(after.codec == before.codec)
 
-        let beforeRate = try #require(before.nominalFrameRate)
-        let afterRate = try #require(after.nominalFrameRate)
+        // The precise rate comes from the exact rational frame duration, which passthrough copies
+        // verbatim. `nominalFrameRate` is derived from the samples actually present, and the
+        // partial leading GOP a trim retains varies with where the encoder placed its keyframes.
+        let beforeRate = try #require(before.preciseFrameRate)
+        let afterRate = try #require(after.preciseFrameRate)
 
-        // Tolerate one frame. `nominalFrameRate` on a trimmed track is derived from the samples
-        // actually present, so whether the frame sitting exactly on the out point lands inside the
-        // range moves the result by 1/duration -- 89 frames over 3s reads as 29.67 rather than 30.
-        // That is a boundary rounding artifact, not the frame rate failing to survive the trim, and
-        // it surfaces only when something else on the machine perturbs the fixture's timing.
-        let trimmedDuration: Float = 4 - 1
-        #expect(abs(afterRate - beforeRate) < 1 / trimmedDuration + 0.01)
+        #expect(afterRate == beforeRate)
     }
 
     @Test func rendersASourceWithNoAudioTrack() async throws {
