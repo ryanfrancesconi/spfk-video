@@ -6,6 +6,12 @@ import Foundation
 
 // MARK: - Synthetic video fixture for tests
 
+enum VideoTestFixtureError: Error {
+    case pixelBufferPoolUnavailable(index: Int)
+    case pixelBufferAllocationFailed(index: Int, status: CVReturn)
+    case appendFailed(index: Int, underlying: (any Error)?)
+}
+
 enum VideoTestFixture {
     /// Generates a synthetic H.264 MP4 video at a temporary path.
     ///
@@ -51,24 +57,38 @@ enum VideoTestFixture {
         let timescale: CMTimeScale = 600
         let totalFrames = Int(duration) * frameRate
 
-        for i in 0..<totalFrames {
-            while !writerInput.isReadyForMoreMediaData {
-                await Task.yield()
+        // A file shorter than `duration` gives its caller no way to tell, so every failure below
+        // throws rather than stopping early.
+        do {
+            for i in 0..<totalFrames {
+                while !writerInput.isReadyForMoreMediaData {
+                    await Task.yield()
+                }
+
+                let presentationTime = CMTime(
+                    value: CMTimeValue(i * Int(timescale) / frameRate),
+                    timescale: timescale
+                )
+
+                guard let pool = adaptor.pixelBufferPool else {
+                    throw VideoTestFixtureError.pixelBufferPoolUnavailable(index: i)
+                }
+                var pixelBuffer: CVPixelBuffer?
+                let status = CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &pixelBuffer)
+                guard status == kCVReturnSuccess, let pixelBuffer else {
+                    throw VideoTestFixtureError.pixelBufferAllocationFailed(index: i, status: status)
+                }
+
+                fillPixelBuffer(pixelBuffer, frameIndex: i, totalFrames: totalFrames)
+
+                guard adaptor.append(pixelBuffer, withPresentationTime: presentationTime) else {
+                    throw VideoTestFixtureError.appendFailed(index: i, underlying: writer.error)
+                }
             }
-
-            let presentationTime = CMTime(
-                value: CMTimeValue(i * Int(timescale) / frameRate),
-                timescale: timescale
-            )
-
-            guard let pool = adaptor.pixelBufferPool else { break }
-            var pixelBuffer: CVPixelBuffer?
-            guard CVPixelBufferPoolCreatePixelBuffer(kCFAllocatorDefault, pool, &pixelBuffer) == kCVReturnSuccess,
-                  let pixelBuffer
-            else { break }
-
-            fillPixelBuffer(pixelBuffer, frameIndex: i, totalFrames: totalFrames)
-            adaptor.append(pixelBuffer, withPresentationTime: presentationTime)
+        } catch {
+            writer.cancelWriting()
+            try? FileManager.default.removeItem(at: url)
+            throw error
         }
 
         writerInput.markAsFinished()
@@ -78,6 +98,7 @@ enum VideoTestFixture {
         }
 
         if let error = writer.error {
+            try? FileManager.default.removeItem(at: url)
             throw error
         }
 
