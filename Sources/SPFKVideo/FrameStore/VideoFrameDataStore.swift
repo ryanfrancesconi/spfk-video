@@ -108,6 +108,10 @@ extension VideoFrameDataStore {
 
     @discardableResult
     public func prune(activeKeys: Set<String>) -> Int {
+        // An empty set means the caller could not enumerate what is live, not that nothing is.
+        // Pruning against it deletes every entry here.
+        guard activeKeys.isNotEmpty else { return 0 }
+
         let fm = FileManager.default
         guard let fileDirs = try? fm.contentsOfDirectory(
             at: directoryURL,
