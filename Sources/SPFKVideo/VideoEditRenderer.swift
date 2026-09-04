@@ -93,7 +93,10 @@ public actor VideoEditRenderer {
         // Asked of the session rather than checked against a list of known-bad extensions, so a
         // container this build can't write is refused without anyone maintaining that list.
         guard session.supportedFileTypes.contains(outputFileType) else {
-            throw VideoEditError.unsupportedOutputContainer(outputURL.pathExtension)
+            throw VideoEditError.unsupportedOutputContainer(
+                outputURL.pathExtension,
+                alternatives: Self.pathExtensions(for: session.supportedFileTypes)
+            )
         }
 
         session.timeRange = timeRange
@@ -268,10 +271,19 @@ public actor VideoEditRenderer {
     }
 
     /// Maps the output URL's path extension to the `AVFileType` the export session expects.
+    ///
+    /// Runs before the session exists, so it has no alternatives to offer -- that answer belongs
+    /// to the session.
     private static func fileType(for url: URL) throws -> AVFileType {
         guard let utType = UTType(filenameExtension: url.pathExtension) else {
-            throw VideoEditError.unsupportedOutputContainer(url.pathExtension)
+            throw VideoEditError.unsupportedOutputContainer(url.pathExtension, alternatives: [])
         }
         return AVFileType(rawValue: utType.identifier)
+    }
+
+    /// The path extensions naming a set of `AVFileType`s -- an `AVFileType` is a UTI, and printing
+    /// one at the user would be unreadable. A type the system has no extension for is dropped.
+    static func pathExtensions(for fileTypes: [AVFileType]) -> [String] {
+        Set(fileTypes.compactMap { UTType($0.rawValue)?.preferredFilenameExtension }).sorted()
     }
 }

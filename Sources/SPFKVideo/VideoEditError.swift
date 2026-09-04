@@ -9,7 +9,11 @@ public enum VideoEditError: Error {
 
     /// The output URL's path extension names a container the export session cannot write.
     /// MPEG-2 transport streams (`.ts`) are the common case — readable, but not writable.
-    case unsupportedOutputContainer(String)
+    ///
+    /// - Parameter alternatives: extensions this export *can* write, so the message can offer one
+    ///   rather than only refusing. Read from the session itself, which is the only thing that
+    ///   knows what this build and this source support; empty when no session exists yet.
+    case unsupportedOutputContainer(String, alternatives: [String])
 
     /// The trim window does not describe a usable range of the source, either because the
     /// in-point falls at or past the end of the asset or because the asset has no duration.
@@ -43,8 +47,11 @@ extension VideoEditError: LocalizedError {
         case let .outputExists(url):
             "A file already exists at \(url.lastPathComponent)"
 
-        case let .unsupportedOutputContainer(pathExtension):
-            "Video edits can't be written to .\(pathExtension) files"
+        case let .unsupportedOutputContainer(pathExtension, alternatives):
+            alternatives.isEmpty
+                ? "Video edits can't be written to .\(pathExtension) files"
+                : "Video edits can't be written to .\(pathExtension) files — try "
+                + alternatives.map { ".\($0)" }.joined(separator: ", ")
 
         case let .trimOutOfRange(inPoint, outPoint, duration):
             "Trim range \(inPoint)–\(outPoint)s is outside the file's \(duration)s duration"
