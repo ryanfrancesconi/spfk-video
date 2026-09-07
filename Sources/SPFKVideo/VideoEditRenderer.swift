@@ -47,12 +47,13 @@ public actor VideoEditRenderer {
 
     private var session: AVAssetExportSession?
 
-    /// Forces the pre-macOS 15 export path regardless of the running OS. Tests only.
+    /// Forces the pre-macOS 15 export path regardless of the running OS.
     ///
-    /// Exists because `#available(macOS 15, *)` is always true on any current development or CI
-    /// machine, so that fallback would otherwise ship to macOS 13/14 users having never executed
-    /// anywhere. Deliberately not public.
-    var usesLegacyExportPath = false
+    /// `#available(macOS 15, *)` is true on every current development and CI machine, so without
+    /// this the branch macOS 13/14 users run would ship having never executed anywhere. Defaults
+    /// from ``OSVersion/macOS15``, so simulating an older system reaches this path app-wide;
+    /// tests set it per instance, which keeps them independent of that global. Not public.
+    var usesLegacyExportPath = !OSVersion.macOS15.isAvailable
 
     public init(sourceURL: URL, trim: TrimDescription, outputURL: URL) {
         self.sourceURL = sourceURL
