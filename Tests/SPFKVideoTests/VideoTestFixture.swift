@@ -8,6 +8,7 @@ import Foundation
 
 enum VideoTestFixtureError: Error {
     case pixelBufferPoolUnavailable(index: Int)
+    case writerStopped(index: Int, status: AVAssetWriter.Status, underlying: (any Error)?)
     case pixelBufferAllocationFailed(index: Int, status: CVReturn)
     case appendFailed(index: Int, underlying: (any Error)?)
 }
@@ -61,7 +62,13 @@ enum VideoTestFixture {
         // throws rather than stopping early.
         do {
             for i in 0..<totalFrames {
+                // A failed writer never becomes ready again, so waiting on it alone would spin forever.
                 while !writerInput.isReadyForMoreMediaData {
+                    guard writer.status == .writing else {
+                        throw VideoTestFixtureError.writerStopped(
+                            index: i, status: writer.status, underlying: writer.error
+                        )
+                    }
                     await Task.yield()
                 }
 
