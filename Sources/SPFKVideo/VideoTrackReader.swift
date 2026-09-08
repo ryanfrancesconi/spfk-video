@@ -23,14 +23,24 @@ public enum VideoTrackReader {
     ///
     /// Folded into this call rather than offered separately so reading it costs no second
     /// `AVURLAsset`: an import measures this once per video file.
+    ///
+    /// `hasProtectedContent` is the other flag only the asset can answer. A FairPlay purchase
+    /// reports `isPlayable` *true* and every track decodable, and only fails once a player holds
+    /// it -- so a caller deciding whether to hand the file to one needs this, not that.
     public static func read(
         from url: URL
-    ) async -> (videoTrack: VideoTrackProperties?, quickTimeUserData: QuickTimeUserData?, isPlayable: Bool) {
+    ) async -> (
+        videoTrack: VideoTrackProperties?,
+        quickTimeUserData: QuickTimeUserData?,
+        isPlayable: Bool,
+        hasProtectedContent: Bool
+    ) {
         let asset = AVURLAsset(url: url)
         let isPlayable = (try? await asset.load(.isPlayable)) ?? false
+        let hasProtectedContent = (try? await asset.load(.hasProtectedContent)) ?? false
         let videoTrack = await readVideoTrack(asset: asset, url: url)
         let quickTimeUserData = await readQuickTimeUserData(asset: asset, url: url)
-        return (videoTrack, quickTimeUserData, isPlayable)
+        return (videoTrack, quickTimeUserData, isPlayable, hasProtectedContent)
     }
 
     /// Whether the file at `url` actually carries a video track.

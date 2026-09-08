@@ -26,7 +26,10 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
     ///    Matroska element cached before this reads as unplayable however well it plays.
     /// 4: `startTimecodeString` added — the `tmcd` track's start value, which the reader
     ///    previously discarded while keeping only the frame rate it resolved alongside.
-    public static let currentParserVersion = 4
+    /// 5: nothing new on this type. `hasProtectedContent` is read alongside and recorded as the
+    ///    description's `isProtected`, so a FairPlay purchase cached under version 4 reads as
+    ///    playable and reaches the player.
+    public static let currentParserVersion = 5
 
     /// The schema version this value was populated at -- see `currentParserVersion`. Defaults
     /// to `nil` only when decoded from data that predates this field's existence; any value
