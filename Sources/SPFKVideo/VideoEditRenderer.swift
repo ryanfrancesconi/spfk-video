@@ -275,6 +275,23 @@ public actor VideoEditRenderer {
     ///
     /// Runs before the session exists, so it has no alternatives to offer -- that answer belongs
     /// to the session.
+    /// Whether AVFoundation can *write* this container — and so whether a trim of it can be applied
+    /// at all.
+    ///
+    /// Reading and writing are different capabilities here, and MXF is the case that separates
+    /// them: the Pro Video Formats readers make it readable, while
+    /// `AVAssetExportSession.supportedFileTypes` still excludes `org.smpte.mxf` — measured
+    /// 2026-09-08 on both a Resolve OP-Atom export and an Adobe OP1a file. A trim writes back to
+    /// the source's own extension, so offering one would fail at
+    /// ``VideoEditError/unsupportedOutputContainer(_:alternatives:)`` after the user had made the
+    /// edit.
+    ///
+    /// Asked of the container rather than the session because a UI gate is synchronous and per
+    /// selection; the session's own check at render time is what actually refuses.
+    public static func canWriteContainer(of url: URL) -> Bool {
+        !MXFMetadata.isMXF(url: url)
+    }
+
     private static func fileType(for url: URL) throws -> AVFileType {
         guard let utType = UTType(filenameExtension: url.pathExtension) else {
             throw VideoEditError.unsupportedOutputContainer(url.pathExtension, alternatives: [])
