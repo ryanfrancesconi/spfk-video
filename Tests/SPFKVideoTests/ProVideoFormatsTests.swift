@@ -45,6 +45,25 @@ struct ProVideoFormatsTests {
         }
     }
 
+    /// The half that can be tested on a machine that *has* the plug-ins, and the one that matters
+    /// most: an inverted condition would show the install prompt to every user who already
+    /// installed them.
+    @Test("Never prompts a user who already has the plug-ins", .enabled(if: ProVideoFormats.isAvailable))
+    func doesNotPromptWhenAvailable() {
+        #expect(ProVideoFormats.needsInstall(for: URL(fileURLWithPath: "/tmp/a.mxf")) == false)
+        #expect(ProVideoFormats.needsInstall(for: URL(fileURLWithPath: "/tmp/a.MXF")) == false)
+    }
+
+    /// Meaningful in both directions, so it runs unconditionally: a container the plug-ins do not
+    /// serve must never produce the prompt, whether or not they are installed. Matroska is the
+    /// trap — also unreadable by `AVAudioFile`, and nothing Apple ships would fix it.
+    @Test("Never prompts for a container the plug-ins do not serve")
+    func doesNotPromptForOtherContainers() {
+        #expect(ProVideoFormats.needsInstall(for: URL(fileURLWithPath: "/tmp/a.mov")) == false)
+        #expect(ProVideoFormats.needsInstall(for: URL(fileURLWithPath: "/tmp/a.mkv")) == false)
+        #expect(ProVideoFormats.needsInstall(for: URL(fileURLWithPath: "/tmp/a.wav")) == false)
+    }
+
     @Test("Extracts a frame from an MXF", .enabled(if: ProVideoFormats.isAvailable))
     func extractsFrameFromMXF() async throws {
         let url = TestBundleResources.shared.sample_mxf

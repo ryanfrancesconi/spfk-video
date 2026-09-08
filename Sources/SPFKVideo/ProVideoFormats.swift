@@ -34,6 +34,25 @@ public enum ProVideoFormats {
     /// The content types registration added, for open-panel filtering and messaging.
     public static var registeredContentTypes: [UTType] { addedContentTypes }
 
+    /// Whether this file is unreadable *only* because the plug-ins are absent — a state the user
+    /// can fix, unlike an unsupported container.
+    ///
+    /// Worth distinguishing because the two look identical from the outside: without this, an MXF
+    /// is silently dropped or shown unplayable, and the user concludes the app cannot read MXF at
+    /// all when a free Apple download is all that is missing.
+    public static func needsInstall(for url: URL) -> Bool {
+        MXFMetadata.isMXF(url: url) && !isAvailable
+    }
+
+    /// The remedy, for a caller to compose its own sentence around.
+    ///
+    /// **Says relaunch because registration is one-shot per process** — ``register()`` resolves
+    /// once, so a process that started without the plug-ins keeps answering `false` however many
+    /// are installed afterwards.
+    public static var installMessage: String {
+        localized("MXF files need Apple's Pro Video Formats, a free download from Apple. Install it, then relaunch.")
+    }
+
     /// `static let` initialization runs once and is thread-safe, which is what makes ``register()``
     /// idempotent without a lock.
     private static let addedContentTypes: [UTType] = {
