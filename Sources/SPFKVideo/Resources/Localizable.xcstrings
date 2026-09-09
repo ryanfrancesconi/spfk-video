@@ -1261,6 +1261,76 @@
         }
       }
     },
+    "MXF files need Apple's Pro Video Formats, a free download from Apple. Install it, then relaunch." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MXF-Dateien benötigen Apples Pro Video Formats, einen kostenlosen Download von Apple. Installieren Sie es, und starten Sie dann neu."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MXF files need Apple's Pro Video Formats, a free download from Apple. Install it, then relaunch."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los archivos MXF necesitan Pro Video Formats de Apple, una descarga gratuita de Apple. Instálalo y luego reinicia."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les fichiers MXF nécessitent Pro Video Formats d’Apple, un téléchargement gratuit proposé par Apple. Installez-le, puis relancez l’app."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I file MXF richiedono Pro Video Formats di Apple, un download gratuito di Apple. Installalo, poi riavvia."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MXFファイルにはAppleのPro Video Formatsが必要です。Appleから無料でダウンロードできます。インストールしてから再起動してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MXF 파일에는 Apple의 Pro Video Formats가 필요합니다. Apple에서 무료로 다운로드할 수 있습니다. 설치한 다음 다시 시작하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MXF-bestanden hebben Apple Pro Video Formats nodig, een gratis download van Apple. Installeer het en start daarna opnieuw."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Os arquivos MXF precisam do Pro Video Formats da Apple, um download gratuito da Apple. Instale-o e reinicie em seguida."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Для файлов MXF требуется Apple Pro Video Formats — бесплатная загрузка от Apple. Установите его, затем перезапустите."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MXF 文件需要 Apple 的 Pro Video Formats，可从 Apple 免费下载。请安装后重新启动。"
+          }
+        }
+      }
+    },
     "MXF Version" : {
       "localizations" : {
         "de" : {
