@@ -141,7 +141,7 @@ struct VideoFrameExtractorTests {
     /// Wide tolerance should never be meaningfully slower than zero tolerance — in practice
     /// it is faster when the video has sparse keyframes, since the generator can reuse
     /// already-decoded I-frames instead of seeking to exact positions.
-    @Test("Wide tolerance is no slower than zero tolerance", .tags(.development))
+    @Test("Wide tolerance is no slower than zero tolerance", .tags(.development, .slow))
     func wideToleranceIsNoSlowerThanZeroTolerance() async throws {
         let videoURL = try await VideoTestFixture.makeTestVideo(duration: 20.0)
         defer { try? FileManager.default.removeItem(at: videoURL) }

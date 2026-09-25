@@ -29,7 +29,7 @@ enum ProtectedMediaFixture {
 ///
 /// Skipped unless `SPFK_PROTECTED_MEDIA` names a file; `xcodebuild` needs it as
 /// `TEST_RUNNER_SPFK_PROTECTED_MEDIA`, since it does not forward the parent environment.
-@Suite(.tags(.development), .serialized, .enabled(if: ProtectedMediaFixture.url != nil))
+@Suite(.tags(.development, .slow), .serialized, .enabled(if: ProtectedMediaFixture.url != nil))
 final class ProtectedVideoDevelopmentTests {
     private let url: URL
 
