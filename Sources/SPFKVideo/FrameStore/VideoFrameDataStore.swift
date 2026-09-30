@@ -125,7 +125,6 @@ extension VideoFrameDataStore {
             guard (try? dir.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true else { continue }
             let key = dir.lastPathComponent
             guard !activeKeys.contains(key) else { continue }
-            Log.debug("pruning orphaned video frame cache: \(key)")
             do {
                 try fm.removeItem(at: dir)
                 removedCount += 1
