@@ -58,7 +58,7 @@ struct VideoFrameExtractorTests {
 
     // MARK: - Different sizes for different consumers
 
-    /// Validates the plan's key design correction: a classification-scale maximumSize produces
+    /// A classification-scale maximumSize produces
     /// meaningfully larger frames than a UI-thumbnail-scale maximumSize via the same API.
     @Test("Larger maximumSize produces larger output than smaller maximumSize")
     func largerMaximumSizeProducesLargerOutput() async throws {

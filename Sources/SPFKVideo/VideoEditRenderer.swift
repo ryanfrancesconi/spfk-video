@@ -12,8 +12,7 @@ import UniformTypeIdentifiers
 /// still exact on both ends — the export retains the partial leading GOP and writes an edit list
 /// that starts presentation at the requested time, so the first presented frame is the frame at
 /// the in-point even when the preceding keyframe is more than a second earlier. Measured against a
-/// 23.976 long-GOP source with keyframes ~1.25 s apart; see
-/// `shadowtag-video-edit-rendering.md` Phase 2. **This is why the editor must not snap trim
+/// 23.976 long-GOP source with keyframes ~1.25 s apart. **This is why the editor must not snap trim
 /// handles to keyframes** — there is no drift to compensate for, and snapping would move the
 /// user's in-point for nothing.
 ///

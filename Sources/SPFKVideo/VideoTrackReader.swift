@@ -108,13 +108,11 @@ public enum VideoTrackReader {
 
     /// Reads device/GPS/creation-date metadata, trying both QuickTime metadata keyspaces.
     ///
-    /// Verified against real files, not assumed: a recent iPhone recording (iOS 26.5) stores
-    /// this data under the modern `mdta` keyspace (`.quickTimeMetadata`) — `.quickTimeUserData`
-    /// (the legacy `udta` keyspace this originally queried exclusively) returned zero items
-    /// for it, confirmed via `asset.load(.availableMetadataFormats)` listing only
-    /// `com.apple.quicktime.mdta`. Older devices/software may still only populate the legacy
-    /// keyspace, so both are queried and merged; `.quickTimeMetadata` takes priority as the
-    /// modern/common case, with `.quickTimeUserData` filling in only fields still `nil`.
+    /// A recent iPhone recording (iOS 26.5) stores this data under the modern `mdta` keyspace
+    /// (`.quickTimeMetadata`) and none under the legacy `udta` keyspace (`.quickTimeUserData`).
+    /// Older devices/software may still only populate the legacy keyspace, so both are queried and
+    /// merged; `.quickTimeMetadata` takes priority as the modern/common case, with
+    /// `.quickTimeUserData` filling in only fields still `nil`.
     private static func readQuickTimeUserData(asset: AVAsset, url: URL) async -> QuickTimeUserData? {
         var userData = QuickTimeUserData()
 

@@ -6,8 +6,7 @@ import Testing
 
 @testable import SPFKVideo
 
-/// Locks down the finding Phase 2 of `shadowtag-video-edit-rendering.md` rests on: an
-/// `AVAssetExportPresetPassthrough` trim preserves the QuickTime `mdta` fields
+/// An `AVAssetExportPresetPassthrough` trim preserves the QuickTime `mdta` fields
 /// ``VideoTrackReader`` reads, so the video edit renderer needs no metadata-copy pass of its own
 /// (unlike `AudioEditRenderer`, which must re-copy everything through `AudioFormatConverter`).
 ///
