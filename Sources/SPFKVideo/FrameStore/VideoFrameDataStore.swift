@@ -99,6 +99,26 @@ extension VideoFrameDataStore {
         try? FileManager.default.removeItem(at: fileDirectory(for: url.sha256))
     }
 
+    /// Moves every cached frame for `oldURL` to `newURL`, for a file that moved without its content
+    /// changing. When `newURL` already has frames they win, and `oldURL`'s are deleted.
+    ///
+    /// **Only call this for a file verified to hold the same video**: frames carry no freshness
+    /// check, so a wrong rekey serves another file's timeline.
+    public func rekey(from oldURL: URL, to newURL: URL) throws {
+        let oldDirectory = fileDirectory(for: oldURL.sha256)
+        let newDirectory = fileDirectory(for: newURL.sha256)
+        let fm = FileManager.default
+
+        guard oldDirectory != newDirectory, fm.fileExists(atPath: oldDirectory.path) else { return }
+
+        guard !fm.fileExists(atPath: newDirectory.path) else {
+            try fm.removeItem(at: oldDirectory)
+            return
+        }
+
+        try fm.moveItem(at: oldDirectory, to: newDirectory)
+    }
+
     /// Removes every cached video whose fileKey is not present in `activeURLs`.
     /// Each removal deletes the video's whole subdirectory in one operation, not a per-frame scan.
     @discardableResult

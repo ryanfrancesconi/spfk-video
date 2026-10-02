@@ -20,6 +20,10 @@ public protocol VideoFrameDataStoreAccess: Sendable {
     /// housekeeping is ``pruneVideoFrames(activeURLs:)``.
     func deleteVideoFrames(for url: URL) async
 
+    /// Moves every cached frame for a file that moved without its content changing. See
+    /// ``VideoFrameDataStore/rekey(from:to:)``.
+    func rekeyVideoFrames(from oldURL: URL, to newURL: URL) async throws
+
     @discardableResult
     func pruneVideoFrames(activeURLs: Set<URL>) async -> Int
 }
