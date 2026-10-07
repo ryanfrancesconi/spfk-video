@@ -86,7 +86,7 @@ public enum VideoTrackReader {
             // The `tmcd` track's start value. Read at `preciseFrameRate` so the two agree by
             // construction; passing nil lets the call detect the rate a second time, which can
             // land somewhere else and yield a string this file's rate cannot express.
-            let startTimecode = try? await asset.startTimecode(at: preciseFrameRate)
+            let startTimecode = try? await asset.startTimecodeReadingOffPool(at: preciseFrameRate)
 
             return VideoTrackProperties(
                 width: Int(naturalSize.width),
