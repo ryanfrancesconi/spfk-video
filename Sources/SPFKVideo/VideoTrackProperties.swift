@@ -18,7 +18,8 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
     ///
     /// **This is the only thing that repairs already-imported elements**, so a fix to what a read
     /// records is not finished until this is bumped: the parser change alone reaches new files
-    /// only, and every existing library keeps the stale value forever.
+    /// only. Each store stamps a row with the version its tracks were read at, including a read
+    /// that found none, and re-reads the rows whose stamp is behind this.
     ///
     /// 2: `duration` added, which anything cached under version 1 is missing.
     /// 3: nothing new on this type. `isDecodable` — whether the Matroska demuxer can decode a
@@ -29,7 +30,10 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
     /// 5: nothing new on this type. `hasProtectedContent` is read alongside and recorded as the
     ///    description's `isProtected`, so a FairPlay purchase cached under version 4 reads as
     ///    playable and reaches the player.
-    public static let currentParserVersion = 5
+    /// 6: nothing new on this type. The stores' repair now records `isProtected` and stamps each
+    ///    row with the version it was read at, so rows that 5 settled without `isProtected` are
+    ///    read again.
+    public static let currentParserVersion = 6
 
     /// The schema version this value was populated at -- see `currentParserVersion`. Defaults
     /// to `nil` only when decoded from data that predates this field's existence; any value
