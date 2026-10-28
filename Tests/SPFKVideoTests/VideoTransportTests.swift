@@ -10,16 +10,7 @@ import Testing
 @MainActor
 struct VideoTransportTests {
     private func loadedTransport() async -> VideoTransport {
-        let transport = VideoTransport()
-        transport.player.isMuted = true
-        transport.load(url: TestBundleResources.shared.sample_mov)
-
-        let deadline = Date().addingTimeInterval(10)
-        while Date() < deadline, !transport.isReady {
-            try? await Task.sleep(for: .milliseconds(25))
-        }
-
-        return transport
+        await VideoTransport.loaded(url: TestBundleResources.shared.sample_mov)
     }
 
     // MARK: - Speed availability
@@ -242,15 +233,7 @@ struct PlaybackSpeedTests {
 @MainActor
 struct VideoTransportSteppingTests {
     private func loadedTransport() async -> VideoTransport {
-        let transport = VideoTransport()
-        transport.player.isMuted = true
-        transport.load(url: TestBundleResources.shared.sample_mov)
-
-        let deadline = Date().addingTimeInterval(10)
-        while Date() < deadline, !transport.isReady {
-            try? await Task.sleep(for: .milliseconds(25))
-        }
-        return transport
+        await VideoTransport.loaded(url: TestBundleResources.shared.sample_mov)
     }
 
     /// Nothing loaded means nothing to step — and no trap on a nil item.

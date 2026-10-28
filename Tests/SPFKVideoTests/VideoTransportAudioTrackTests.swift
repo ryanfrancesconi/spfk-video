@@ -14,16 +14,7 @@ struct VideoTransportAudioTrackTests {
     private func loadedTransport(
         url: URL = TestBundleResources.shared.sample_dualaudio_mov
     ) async -> VideoTransport {
-        let transport = VideoTransport()
-        transport.player.isMuted = true
-        transport.load(url: url)
-
-        let deadline = Date().addingTimeInterval(10)
-        while Date() < deadline, !transport.isReady || transport.availableAudioTracks.isEmpty {
-            try? await Task.sleep(for: .milliseconds(25))
-        }
-
-        return transport
+        await VideoTransport.loaded(url: url) { !$0.availableAudioTracks.isEmpty }
     }
 
     /// The enabled audio tracks of the live player item, which is what is actually heard.

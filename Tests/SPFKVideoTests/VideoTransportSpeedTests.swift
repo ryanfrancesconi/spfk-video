@@ -11,16 +11,7 @@ import Testing
 @MainActor
 struct VideoTransportSpeedTests {
     private func loadedTransport() async -> VideoTransport {
-        let transport = VideoTransport()
-        transport.player.isMuted = true
-        transport.load(url: TestBundleResources.shared.sample_mov)
-
-        let deadline = Date().addingTimeInterval(10)
-        while Date() < deadline, !transport.isReady {
-            try? await Task.sleep(for: .milliseconds(25))
-        }
-
-        return transport
+        await VideoTransport.loaded(url: TestBundleResources.shared.sample_mov)
     }
 
     /// Nothing loaded plays at nothing but 1x, so a selection made before a file arrives does not
