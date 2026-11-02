@@ -4,9 +4,9 @@
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-video%2Fbadge%3Ftype%3Dswift-versions)](https://swiftpackageindex.com/ryanfrancesconi/spfk-video)
 [![](https://img.shields.io/endpoint?url=https%3A%2F%2Fswiftpackageindex.com%2Fapi%2Fpackages%2Fryanfrancesconi%2Fspfk-video%2Fbadge%3Ftype%3Dplatforms)](https://swiftpackageindex.com/ryanfrancesconi/spfk-video)
 
-A capability an app embeds: reading, playing, sampling and trimming video files through
-AVFoundation, with no UI. Video is first-class in both an audio library and an image library, so
-this package carries no audio or image dependency and either kind of app can reach it.
+Reads, plays, samples and trims video files through AVFoundation, with no UI. Video is first-class
+in both an audio library and an image library, so this package carries no audio or image dependency
+and either kind of app can reach it.
 
 It reads a file's video track and capture metadata, extracts frames and caches them on disk,
 controls playback without drawing anything, lists a file's audio tracks for the user to choose
