@@ -34,6 +34,10 @@ public enum VideoEditError: Error {
     /// success, so this is the only signal that the render is not a faithful copy. Callers replace
     /// the user's original with the render, which makes the loss permanent and silent.
     case tracksLost(URL, missing: [String])
+
+    /// A metadata write completed and the file came back without audio or video it had before.
+    /// Unlike ``tracksLost(_:missing:)``, the file was changed. See ``MediaTrackInventory``.
+    case tracksLostBySave(URL, missing: [String])
 }
 
 // MARK: - LocalizedError
@@ -67,6 +71,9 @@ extension VideoEditError: LocalizedError {
 
         case let .tracksLost(url, missing):
             "Rendering \(url.lastPathComponent) would have dropped its \(missing.joined(separator: " and ")) — the file was left unchanged"
+
+        case let .tracksLostBySave(url, missing):
+            "Saving \(url.lastPathComponent) removed its \(missing.joined(separator: " and "))"
         }
     }
 }
