@@ -129,6 +129,7 @@ public final class VideoTransport {
             }
         }
 
+        applyPlaybackEndTime()
         loadAudioTracks(for: url)
 
         endObserver = NotificationCenter.default.addObserver(
@@ -151,6 +152,7 @@ public final class VideoTransport {
 
         player.replaceCurrentItem(with: nil)
         url = nil
+        playbackEndTime = nil
 
         // A seek waiting on the outgoing item names a position in a file that is gone.
         seekCoalescer.cancelPending()
@@ -274,8 +276,32 @@ public final class VideoTransport {
         applySpeed()
     }
 
+    /// Seeks to `time` and plays from there, without the restart-from-the-end check ``play()``
+    /// makes.
+    public func play(from time: TimeInterval) {
+        guard isReady else { return }
+
+        seek(to: time)
+        applySpeed()
+    }
+
     public func pause() {
         player.pause()
+    }
+
+    /// Where forward playback stops, posting ``Event/reachedEnd`` as the file's own end does.
+    /// `nil` plays to the end. Cleared by ``unload()``.
+    public var playbackEndTime: TimeInterval? {
+        didSet {
+            guard playbackEndTime != oldValue else { return }
+            applyPlaybackEndTime()
+        }
+    }
+
+    private func applyPlaybackEndTime() {
+        player.currentItem?.forwardPlaybackEndTime = playbackEndTime.map {
+            CMTime(seconds: $0, preferredTimescale: 600)
+        } ?? .invalid
     }
 
     public func togglePlayPause() {
