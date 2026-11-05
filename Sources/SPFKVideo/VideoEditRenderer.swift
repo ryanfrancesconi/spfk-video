@@ -81,7 +81,7 @@ public actor VideoEditRenderer {
         }
 
         let asset = AVURLAsset(url: sourceURL)
-        let timeRange = try await resolveTimeRange(in: asset)
+        let timeRange = try await VideoExport.timeRange(for: trim, in: asset)
 
         guard let session = AVAssetExportSession(
             asset: asset,
@@ -105,15 +105,7 @@ public actor VideoEditRenderer {
         defer { self.session = nil }
 
         do {
-            if #available(macOS 15, *), !usesLegacyExportPath {
-                // Native async: reports failure by throwing rather than through a status
-                // property, and its `isolation` parameter defaults to `#isolation`, so it stays
-                // on this actor without a continuation bridge. Takes the destination directly —
-                // `outputURL`/`outputFileType` must not also be set on the session.
-                try await session.export(to: outputURL, as: outputFileType)
-            } else {
-                try await exportPreMacOS15(session, to: outputURL, as: outputFileType)
-            }
+            try await VideoExport.run(session, to: outputURL, as: outputFileType, legacy: usesLegacyExportPath)
         } catch {
             // A failed or cancelled export can still leave a partial file behind, and the
             // caller's next step is typically to replace the original with it.
@@ -139,48 +131,13 @@ public actor VideoEditRenderer {
 
     // MARK: - Private
 
-    /// The export path for macOS 13 and 14, where `export(to:as:)` is unavailable.
-    ///
-    /// Sets the destination on the session, bridges the completion handler to async, and turns
-    /// the resulting `status` into a throw so both paths fail the same way for the caller.
-    ///
-    /// Deletes cleanly along with its call site once this package's deployment target reaches
-    /// macOS 15 — nothing else here depends on the pre-15 shape.
-    private func exportPreMacOS15(
-        _ session: AVAssetExportSession,
-        to url: URL,
-        as fileType: AVFileType
-    ) async throws {
-        session.outputURL = url
-        session.outputFileType = fileType
-
-        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            session.exportAsynchronously { continuation.resume() }
-        }
-
-        switch session.status {
-        case .completed:
-            return
-        case .cancelled:
-            throw VideoEditError.cancelled
-        default:
-            throw VideoEditError.exportFailed(sourceURL, underlying: session.error)
-        }
-    }
-
-    /// Normalizes what the two export paths throw into a single ``VideoEditError``.
-    ///
-    /// The macOS 15 path reports cancellation by throwing rather than through a status property,
-    /// and does so as `AVError.operationCancelled` when ``cancel()`` was called or as a
-    /// `CancellationError` when the enclosing task was cancelled — both mean the same thing here.
+    /// Normalizes what the export throws into a single ``VideoEditError``. ``cancel()`` and task
+    /// cancellation both arrive as `CancellationError`.
     private static func renderError(from error: any Error, sourceURL: URL) -> VideoEditError {
         if let error = error as? VideoEditError {
             return error
         }
         if error is CancellationError {
-            return .cancelled
-        }
-        if let error = error as? AVError, error.code == .operationCancelled {
             return .cancelled
         }
         return .exportFailed(sourceURL, underlying: error)
@@ -192,20 +149,7 @@ public actor VideoEditRenderer {
     /// either way, so a dropped track arrives as success. The caller's next step is to replace the
     /// user's original with this file, which is the point of no return.
     private func verifyTracksSurvived(from asset: AVURLAsset, to url: URL) async throws {
-        let sourceTypes = try await asset.load(.tracks).map(\.mediaType)
-        let outputTypes = try await AVURLAsset(url: url).load(.tracks).map(\.mediaType)
-
-        var missing = Self.missingEssentialTracks(source: sourceTypes, output: outputTypes)
-
-        // A track list is not the only reading of a file's audio, and where the two disagree this
-        // comparison is blind: the export carries over what `AVURLAsset` lists, so a track absent
-        // from the source's list is absent from both sides and counts as nothing missing.
-        // ``hasDecodableAudio(at:)`` is the second opinion.
-        if missing.isEmpty,
-           Self.hasDecodableAudio(at: sourceURL),
-           !Self.hasDecodableAudio(at: url) {
-            missing = [.audio]
-        }
+        let missing = try await VideoExport.missingTracks(source: asset, sourceURL: sourceURL, output: url, comparing: .count)
 
         guard missing.isEmpty else {
             try? FileManager.default.removeItem(at: url)
@@ -239,35 +183,6 @@ public actor VideoEditRenderer {
         [.audio, .video].filter { type in
             output.filter { $0 == type }.count < source.filter { $0 == type }.count
         }
-    }
-
-    /// Resolves the trim's seconds against the asset's real duration.
-    ///
-    /// An `outPoint` of 0 means "to the end"; an `outPoint` past the end is clamped rather than
-    /// refused, since a trim stored against a slightly different duration (a container whose
-    /// audio and video tracks disagree by a few frames) is a rounding artifact, not a mistake.
-    private func resolveTimeRange(in asset: AVURLAsset) async throws -> CMTimeRange {
-        let duration = try await asset.load(.duration)
-
-        guard duration.isValid, !duration.isIndefinite, duration.seconds > 0 else {
-            throw VideoEditError.trimOutOfRange(
-                inPoint: trim.inPoint, outPoint: trim.outPoint, duration: duration.seconds
-            )
-        }
-
-        let start = CMTime(seconds: trim.inPoint, preferredTimescale: 600)
-        let requestedEnd = trim.outPoint > 0
-            ? CMTime(seconds: trim.outPoint, preferredTimescale: 600)
-            : duration
-        let end = min(requestedEnd, duration)
-
-        guard start < end else {
-            throw VideoEditError.trimOutOfRange(
-                inPoint: trim.inPoint, outPoint: trim.outPoint, duration: duration.seconds
-            )
-        }
-
-        return CMTimeRange(start: start, end: end)
     }
 
     /// Maps the output URL's path extension to the `AVFileType` the export session expects.
