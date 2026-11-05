@@ -28,8 +28,7 @@ public actor VideoFrameDataStore {
     }
 
     private static func ensureDirectory(at url: URL) throws {
-        // Unconditional: a no-op on an existing directory, and a throw on a file in its place.
-        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        try FileSystem.ensureWritableDirectory(at: url)
     }
 
     // MARK: - Private Filename Helpers

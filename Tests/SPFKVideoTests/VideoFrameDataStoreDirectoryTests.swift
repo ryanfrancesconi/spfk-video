@@ -7,8 +7,8 @@ import Testing
 
 @testable import SPFKVideo
 
-/// A file where a store's directory goes would leave the store writing nowhere, so building it
-/// has to fail.
+/// A store whose directory is a file, or cannot be written, would fail every write silently, so
+/// building it has to fail.
 @Suite(.tags(.file))
 final class VideoFrameDataStoreDirectoryTests: BinTestCase {
     private func plantFile(named name: String) throws {
@@ -19,6 +19,17 @@ final class VideoFrameDataStoreDirectoryTests: BinTestCase {
 
     @Test func aFileWhereTheStoreGoesFailsTheStore() throws {
         try plantFile(named: "Video")
+
+        #expect(throws: (any Error).self) {
+            _ = try VideoFrameDataStore(inDirectory: self.bin)
+        }
+    }
+
+    @Test func aReadOnlyStoreDirectoryFailsTheStore() throws {
+        let directory = bin.appendingPathComponent("Data/Video", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: directory.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: directory.path) }
 
         #expect(throws: (any Error).self) {
             _ = try VideoFrameDataStore(inDirectory: self.bin)
