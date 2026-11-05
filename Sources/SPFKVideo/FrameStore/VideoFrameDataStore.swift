@@ -3,6 +3,7 @@
 import CoreGraphics
 import Foundation
 import SPFKBase
+import SPFKFileSystem
 
 /// Disk cache for extracted video frames, keyed by source video and requested timestamp.
 ///
@@ -22,7 +23,7 @@ public actor VideoFrameDataStore {
     static let fullSuffix = "_full.jpg"
 
     public init(inDirectory: URL) throws {
-        directoryURL = inDirectory.appendingPathComponent("Data/Video")
+        directoryURL = inDirectory.appendingPathComponent(CacheDirectoryName.data).appendingPathComponent("Video")
         try Self.ensureDirectory(at: directoryURL)
     }
 
