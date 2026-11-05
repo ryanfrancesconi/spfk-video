@@ -2,6 +2,7 @@
 
 import AVFoundation
 import Foundation
+import UniformTypeIdentifiers
 
 /// The file a video converts into. The raw values are stored in saved settings.
 public enum VideoConversionContainer: String, Codable, CaseIterable, Sendable {
@@ -19,10 +20,8 @@ public enum VideoConversionContainer: String, Codable, CaseIterable, Sendable {
         rawValue
     }
 
+    /// The system's name for the type and its extension, as the image formats are listed.
     public var title: String {
-        switch self {
-        case .mov: "QuickTime Movie (mov)"
-        case .mp4: "MPEG-4 Movie (mp4)"
-        }
+        "\(UTType(fileType.rawValue)?.localizedDescription ?? rawValue) (\(pathExtension))"
     }
 }
