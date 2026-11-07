@@ -118,12 +118,6 @@ public actor VideoEditRenderer {
         return outputURL
     }
 
-    /// Cancels an in-flight ``render()``, which then throws ``VideoEditError/cancelled`` and
-    /// removes the partial output. No effect when no render is running.
-    public func cancel() {
-        session?.cancelExport()
-    }
-
     /// Tests only — see ``usesLegacyExportPath``.
     func setUsesLegacyExportPath(_ value: Bool) {
         usesLegacyExportPath = value
@@ -131,8 +125,8 @@ public actor VideoEditRenderer {
 
     // MARK: - Private
 
-    /// Normalizes what the export throws into a single ``VideoEditError``. ``cancel()`` and task
-    /// cancellation both arrive as `CancellationError`.
+    /// Normalizes what the export throws into a single ``VideoEditError``. Task cancellation
+    /// arrives as `CancellationError`.
     private static func renderError(from error: any Error, sourceURL: URL) -> VideoEditError {
         if let error = error as? VideoEditError {
             return error
