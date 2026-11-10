@@ -83,6 +83,8 @@ public enum VideoTrackReader {
             // Float above. nil when the real rate doesn't match a known standard rate.
             let preciseFrameRate = try? await asset.timecodeFrameRate()
 
+            let orientation = OrientationEdit(trackTransform: transform)
+
             // The `tmcd` track's start value. Read at `preciseFrameRate` so the two agree by
             // construction; passing nil lets the call detect the rate a second time, which can
             // land somewhere else and yield a string this file's rate cannot express.
@@ -97,7 +99,8 @@ public enum VideoTrackReader {
                 duration: CMTimeGetSeconds(trackDuration),
                 startTimecodeString: startTimecode?.stringValue(),
                 pixelAspectRatio: pixelAspectRatio,
-                rotationDegrees: rotationDegrees(from: transform),
+                rotationDegrees: orientation.map { $0.quarterTurns * 90 } ?? rotationDegrees(from: transform),
+                isMirrored: orientation?.isMirrored,
                 parserVersion: VideoTrackProperties.currentParserVersion
             )
         } catch {
@@ -206,7 +209,8 @@ public enum VideoTrackReader {
 
     /// Normalizes an `AVAssetTrack.preferredTransform` rotation to the nearest multiple of
     /// 90 degrees (0, 90, 180, or 270) — what a portrait phone-shot video needs applied to
-    /// preview right-side-up.
+    /// preview right-side-up. Misreads a mirrored matrix; the reader asks
+    /// `OrientationEdit(trackTransform:)` first and falls back to this only for one that scales.
     static func rotationDegrees(from transform: CGAffineTransform) -> Int {
         let radians = atan2(Double(transform.b), Double(transform.a))
         var degrees = Int((radians * 180 / .pi).rounded())

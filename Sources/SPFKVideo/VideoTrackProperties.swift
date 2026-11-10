@@ -33,7 +33,8 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
     /// 6: nothing new on this type. The stores' repair now records `isProtected` and stamps each
     ///    row with the version it was read at, so rows that 5 settled without `isProtected` are
     ///    read again.
-    public static let currentParserVersion = 6
+    /// 7: `isMirrored` added. A mirrored matrix read as a 180° turn before it.
+    public static let currentParserVersion = 7
 
     /// The schema version this value was populated at -- see `currentParserVersion`. Defaults
     /// to `nil` only when decoded from data that predates this field's existence; any value
@@ -107,7 +108,12 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
     /// Rotation baked into `AVAssetTrack.preferredTransform`, normalized to the nearest
     /// multiple of 90 degrees (0, 90, 180, or 270). This is what a portrait phone-shot
     /// video needs applied to preview right-side-up.
+    ///
+    /// Clockwise, performed after the left-right mirror when ``isMirrored``.
     public var rotationDegrees: Int?
+
+    /// Whether `preferredTransform` mirrors the picture. `nil` for a matrix that also scales or skews.
+    public var isMirrored: Bool?
 
     /// The rate to render this track's timecode at.
     ///
@@ -153,6 +159,7 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
         startTimecodeString: String? = nil,
         pixelAspectRatio: Double? = nil,
         rotationDegrees: Int? = nil,
+        isMirrored: Bool? = nil,
         parserVersion: Int? = Self.currentParserVersion
     ) {
         self.width = width
@@ -164,6 +171,7 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
         self.startTimecodeString = startTimecodeString
         self.pixelAspectRatio = pixelAspectRatio
         self.rotationDegrees = rotationDegrees
+        self.isMirrored = isMirrored
         self.parserVersion = parserVersion
     }
 }

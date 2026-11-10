@@ -121,7 +121,9 @@ public struct VideoTechnicalProperties: Sendable, Hashable {
             // that default rather than leaving the row blank.
             dictionary[.pixelAspectRatio] = String(format: "%.3f", videoTrack.pixelAspectRatio ?? 1.0)
             if let rotationDegrees = videoTrack.rotationDegrees {
-                dictionary[.rotation] = "\(rotationDegrees)\u{00B0}"
+                dictionary[.rotation] = videoTrack.isMirrored == true
+                    ? localized("\(rotationDegrees)° Mirrored")
+                    : "\(rotationDegrees)\u{00B0}"
             }
         }
 
