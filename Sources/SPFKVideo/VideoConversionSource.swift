@@ -19,6 +19,9 @@ public struct VideoConversionSource: Sendable {
     /// Rendered into the output. `nil` or empty converts the whole file.
     public var trim: TrimDescription?
 
+    /// Rendered into the output, after what each video track displays now.
+    public var orientation: OrientationEdit
+
     /// Whether the input's Finder tags are copied to the output.
     public var copiesFinderTags: Bool
 
@@ -29,6 +32,7 @@ public struct VideoConversionSource: Sendable {
         originalInput: URL? = nil,
         conflictScheme: FileConflictScheme = .overwrite,
         trim: TrimDescription? = nil,
+        orientation: OrientationEdit = .up,
         copiesFinderTags: Bool = true
     ) {
         self.input = input
@@ -37,6 +41,7 @@ public struct VideoConversionSource: Sendable {
         self.originalInput = originalInput
         self.conflictScheme = conflictScheme
         self.trim = trim
+        self.orientation = orientation
         self.copiesFinderTags = copiesFinderTags
     }
 }

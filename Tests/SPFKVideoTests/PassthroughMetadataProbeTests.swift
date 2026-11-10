@@ -2,6 +2,8 @@
 
 import AVFoundation
 import Foundation
+import SPFKBase
+import SPFKTesting
 import Testing
 
 @testable import SPFKVideo
@@ -45,6 +47,42 @@ final class PassthroughMetadataProbeTests {
 
         let duration = try await AVURLAsset(url: trimmed).load(.duration).seconds
         #expect(abs(duration - 2.0) < 0.05, "expected ~2s, got \(duration)s")
+    }
+
+    /// The renderer on both of its asset paths: `.up` reads an `AVURLAsset`, an orientation an
+    /// `AVMutableMovie`. A composition would drop all of this.
+    @Test(arguments: [OrientationEdit.up, .right])
+    func theRendererPreservesQuickTimeUserData(orientation: OrientationEdit) async throws {
+        let source = try await Self.makeTaggedVideo()
+        defer { try? FileManager.default.removeItem(at: source) }
+
+        let before = try #require(await VideoTrackReader.read(from: source).quickTimeUserData)
+
+        let output = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("mov")
+        defer { try? FileManager.default.removeItem(at: output) }
+
+        try await VideoEditRenderer(
+            sourceURL: source, trim: TrimDescription(inPoint: 1, outPoint: 3), orientation: orientation, outputURL: output
+        ).render()
+
+        let after = try #require(await VideoTrackReader.read(from: output).quickTimeUserData)
+        #expect(after == before)
+    }
+
+    /// A timecode track is not essential to ``VideoEditRenderer``'s track check, so this is the only
+    /// guard that the movie path keeps it.
+    @Test(arguments: [OrientationEdit.up, .right])
+    func theRendererKeepsATimecodeTrack(orientation: OrientationEdit) async throws {
+        let source = TestBundleResources.shared.sample_timecode_mov
+        let output = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathExtension("mov")
+        defer { try? FileManager.default.removeItem(at: output) }
+
+        try await VideoEditRenderer(sourceURL: source, trim: TrimDescription(), orientation: orientation, outputURL: output).render()
+
+        let sourceTypes = try await AVURLAsset(url: source).load(.tracks).map(\.mediaType)
+        let outputTypes = try await AVURLAsset(url: output).load(.tracks).map(\.mediaType)
+        #expect(sourceTypes.contains(.timecode))
+        #expect(outputTypes.sorted { $0.rawValue < $1.rawValue } == sourceTypes.sorted { $0.rawValue < $1.rawValue })
     }
 
     // MARK: - Helpers

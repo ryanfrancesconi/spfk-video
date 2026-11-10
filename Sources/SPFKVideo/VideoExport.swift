@@ -87,10 +87,11 @@ enum VideoExport {
     /// source's list is absent from both sides. ``VideoEditRenderer/hasDecodableAudio(at:)`` is the
     /// second opinion.
     static func missingTracks(
-        source asset: AVURLAsset,
+        source asset: AVAsset,
         sourceURL: URL,
         output url: URL,
-        comparing comparison: TrackComparison
+        comparing comparison: TrackComparison,
+        isolation: isolated (any Actor)? = #isolation
     ) async throws -> [AVMediaType] {
         let sourceTypes = try await asset.load(.tracks).map(\.mediaType)
         let outputTypes = try await AVURLAsset(url: url).load(.tracks).map(\.mediaType)
@@ -111,12 +112,57 @@ enum VideoExport {
         return missing
     }
 
+    /// A movie of `url` whose video tracks display `orientation` after what they display now, with the
+    /// matrix set on each track in order; `nil` for no edit. Every export preset honors the movie:
+    /// passthrough writes the matrix, and a re-encoding preset renders the pixels through it.
+    static func orientedMovie(
+        of url: URL,
+        orientation: OrientationEdit,
+        isolation: isolated (any Actor)? = #isolation
+    ) async throws -> (movie: AVMutableMovie, transforms: [CGAffineTransform])? {
+        guard !orientation.isIdentity else { return nil }
+
+        let movie = AVMutableMovie(url: url, options: nil)
+        var transforms: [CGAffineTransform] = []
+
+        for track in try await movie.loadTracks(withMediaType: .video) {
+            let transform = try await track.load(.preferredTransform)
+            let naturalSize = try await track.load(.naturalSize)
+            let oriented = transform.applying(orientation, naturalSize: naturalSize)
+
+            track.preferredTransform = oriented
+            transforms.append(oriented)
+        }
+
+        return (movie, transforms)
+    }
+
+    /// Whether the video tracks at `url` carry `transforms`, in order, within 1e-6 on each field.
+    static func videoTransforms(at url: URL, match transforms: [CGAffineTransform]) async throws -> Bool {
+        var written: [CGAffineTransform] = []
+
+        for track in try await AVURLAsset(url: url).loadTracks(withMediaType: .video) {
+            written.append(try await track.load(.preferredTransform))
+        }
+
+        guard written.count == transforms.count else { return false }
+
+        return zip(transforms, written).allSatisfy { lhs, rhs in
+            zip([lhs.a, lhs.b, lhs.c, lhs.d, lhs.tx, lhs.ty], [rhs.a, rhs.b, rhs.c, rhs.d, rhs.tx, rhs.ty])
+                .allSatisfy { abs($0 - $1) <= 1e-6 }
+        }
+    }
+
     /// Resolves the trim's seconds against the asset's real duration.
     ///
     /// An `outPoint` of 0 means "to the end"; one past the end is clamped rather than refused, since a
     /// trim stored against a slightly different duration (a container whose audio and video tracks
     /// disagree by a few frames) is a rounding artifact, not a mistake.
-    static func timeRange(for trim: TrimDescription, in asset: AVURLAsset) async throws -> CMTimeRange {
+    static func timeRange(
+        for trim: TrimDescription,
+        in asset: AVAsset,
+        isolation: isolated (any Actor)? = #isolation
+    ) async throws -> CMTimeRange {
         let duration = try await asset.load(.duration)
 
         guard duration.isValid, !duration.isIndefinite, duration.seconds > 0 else {

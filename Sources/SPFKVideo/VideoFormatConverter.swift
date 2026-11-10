@@ -50,7 +50,8 @@ public struct VideoFormatConverter: Sendable {
             }
         }
 
-        let asset = AVURLAsset(url: source.input)
+        let asset: AVAsset = try await VideoExport.orientedMovie(of: source.input, orientation: source.orientation)?.movie
+            ?? AVURLAsset(url: source.input)
         let session = try await makeSession(for: asset)
 
         let workDirectory = try FileManager.default.url(
@@ -102,7 +103,7 @@ public struct VideoFormatConverter: Sendable {
     }
 
     /// The session for the preset and container, its time range set from the trim.
-    private func makeSession(for asset: AVURLAsset) async throws -> AVAssetExportSession {
+    private func makeSession(for asset: AVAsset) async throws -> AVAssetExportSession {
         let options = source.options
         let isProtected: Bool
 

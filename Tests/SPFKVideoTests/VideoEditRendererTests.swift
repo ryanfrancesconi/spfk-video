@@ -67,11 +67,12 @@ final class VideoEditRendererTests {
 
     /// The guard has to stay quiet on the ordinary path, or it trades silent loss for a render
     /// nobody can complete.
-    @Test func arealRenderPassesTheGuard() async throws {
+    @Test(arguments: Self.assetPaths)
+    func arealRenderPassesTheGuard(orientation: OrientationEdit) async throws {
         let source = try await Self.videoWithAudio(duration: 8)
         defer { try? FileManager.default.removeItem(at: source) }
 
-        let output = try await Self.render(source, TrimDescription(inPoint: 2, outPoint: 5))
+        let output = try await Self.render(source, TrimDescription(inPoint: 2, outPoint: 5), orientation)
         defer { try? FileManager.default.removeItem(at: output) }
 
         let tracks = try await AVURLAsset(url: output).load(.tracks).map(\.mediaType)
@@ -81,7 +82,8 @@ final class VideoEditRendererTests {
 
     /// End to end: an export that really does drop a track must throw rather than return a URL,
     /// and must not leave the partial render behind for a caller to swap in.
-    @Test func aRenderThatDropsATrackThrows() async throws {
+    @Test(arguments: Self.assetPaths)
+    func aRenderThatDropsATrackThrows(orientation: OrientationEdit) async throws {
         let source = try await Self.videoWithAudio(duration: 8)
         defer { try? FileManager.default.removeItem(at: source) }
 
@@ -95,6 +97,7 @@ final class VideoEditRendererTests {
         let renderer = VideoEditRenderer(
             sourceURL: source,
             trim: TrimDescription(inPoint: 0, outPoint: 5),
+            orientation: orientation,
             outputURL: output
         )
 
@@ -116,11 +119,12 @@ final class VideoEditRendererTests {
 
     // MARK: - Trimming
 
-    @Test func producesTheRequestedDuration() async throws {
+    @Test(arguments: Self.assetPaths)
+    func producesTheRequestedDuration(orientation: OrientationEdit) async throws {
         let source = try await Self.videoWithAudio(duration: 8)
         defer { try? FileManager.default.removeItem(at: source) }
 
-        let output = try await Self.render(source, TrimDescription(inPoint: 2, outPoint: 5))
+        let output = try await Self.render(source, TrimDescription(inPoint: 2, outPoint: 5), orientation)
         defer { try? FileManager.default.removeItem(at: output) }
 
         let duration = try await AVURLAsset(url: output).load(.duration).seconds
@@ -128,13 +132,14 @@ final class VideoEditRendererTests {
     }
 
     /// An `outPoint` of 0 means "keep to the end", the same convention the audio path uses.
-    @Test func keepsToTheEndWhenOutPointIsZero() async throws {
+    @Test(arguments: Self.assetPaths)
+    func keepsToTheEndWhenOutPointIsZero(orientation: OrientationEdit) async throws {
         let source = try await Self.videoWithAudio(duration: 8)
         defer { try? FileManager.default.removeItem(at: source) }
 
         let sourceDuration = try await AVURLAsset(url: source).load(.duration).seconds
 
-        let output = try await Self.render(source, TrimDescription(inPoint: 3, outPoint: 0))
+        let output = try await Self.render(source, TrimDescription(inPoint: 3, outPoint: 0), orientation)
         defer { try? FileManager.default.removeItem(at: output) }
 
         let duration = try await AVURLAsset(url: output).load(.duration).seconds
@@ -168,11 +173,12 @@ final class VideoEditRendererTests {
 
     // MARK: - Tracks
 
-    @Test func preservesBothTracks() async throws {
+    @Test(arguments: Self.assetPaths)
+    func preservesBothTracks(orientation: OrientationEdit) async throws {
         let source = try await Self.videoWithAudio(duration: 6)
         defer { try? FileManager.default.removeItem(at: source) }
 
-        let output = try await Self.render(source, TrimDescription(inPoint: 1, outPoint: 4))
+        let output = try await Self.render(source, TrimDescription(inPoint: 1, outPoint: 4), orientation)
         defer { try? FileManager.default.removeItem(at: output) }
 
         let asset = AVURLAsset(url: output)
@@ -182,13 +188,14 @@ final class VideoEditRendererTests {
 
     /// Passthrough copies the encoded media rather than re-encoding, so the video track's
     /// dimensions and frame rate survive unchanged.
-    @Test func preservesVideoTrackProperties() async throws {
+    @Test(arguments: Self.assetPaths)
+    func preservesVideoTrackProperties(orientation: OrientationEdit) async throws {
         let source = try await Self.videoWithAudio(duration: 6)
         defer { try? FileManager.default.removeItem(at: source) }
 
         let before = try #require(await VideoTrackReader.read(from: source).videoTrack)
 
-        let output = try await Self.render(source, TrimDescription(inPoint: 1, outPoint: 4))
+        let output = try await Self.render(source, TrimDescription(inPoint: 1, outPoint: 4), orientation)
         defer { try? FileManager.default.removeItem(at: output) }
 
         let after = try #require(await VideoTrackReader.read(from: output).videoTrack)
@@ -206,11 +213,12 @@ final class VideoEditRendererTests {
         #expect(afterRate == beforeRate)
     }
 
-    @Test func rendersASourceWithNoAudioTrack() async throws {
+    @Test(arguments: Self.assetPaths)
+    func rendersASourceWithNoAudioTrack(orientation: OrientationEdit) async throws {
         let source = try await VideoTestFixture.makeTestVideo(duration: 6)
         defer { try? FileManager.default.removeItem(at: source) }
 
-        let output = try await Self.render(source, TrimDescription(inPoint: 1, outPoint: 4))
+        let output = try await Self.render(source, TrimDescription(inPoint: 1, outPoint: 4), orientation)
         defer { try? FileManager.default.removeItem(at: output) }
 
         let asset = AVURLAsset(url: output)
@@ -226,7 +234,8 @@ final class VideoEditRendererTests {
     /// A transport stream is readable but not writable by the export session. Asked of the
     /// session rather than matched against a hardcoded list, so this covers any container the
     /// running build can't write.
-    @Test func refusesAContainerTheExportSessionCannotWrite() async throws {
+    @Test(arguments: Self.assetPaths)
+    func refusesAContainerTheExportSessionCannotWrite(orientation: OrientationEdit) async throws {
         let source = try await VideoTestFixture.makeTestVideo(duration: 4)
         defer { try? FileManager.default.removeItem(at: source) }
 
@@ -238,13 +247,15 @@ final class VideoEditRendererTests {
             try await VideoEditRenderer(
                 sourceURL: source,
                 trim: TrimDescription(inPoint: 1, outPoint: 2),
+                orientation: orientation,
                 outputURL: output
             ).render()
         }
         #expect(!output.exists)
     }
 
-    @Test func refusesAnExistingOutput() async throws {
+    @Test(arguments: Self.assetPaths)
+    func refusesAnExistingOutput(orientation: OrientationEdit) async throws {
         let source = try await VideoTestFixture.makeTestVideo(duration: 4)
         defer { try? FileManager.default.removeItem(at: source) }
 
@@ -258,6 +269,7 @@ final class VideoEditRendererTests {
             try await VideoEditRenderer(
                 sourceURL: source,
                 trim: TrimDescription(inPoint: 1, outPoint: 2),
+                orientation: orientation,
                 outputURL: output
             ).render()
         }
@@ -266,7 +278,8 @@ final class VideoEditRendererTests {
         #expect(try Data(contentsOf: output) == Data("occupied".utf8))
     }
 
-    @Test func refusesATrimStartingPastTheEndOfTheSource() async throws {
+    @Test(arguments: Self.assetPaths)
+    func refusesATrimStartingPastTheEndOfTheSource(orientation: OrientationEdit) async throws {
         let source = try await VideoTestFixture.makeTestVideo(duration: 4)
         defer { try? FileManager.default.removeItem(at: source) }
 
@@ -278,6 +291,7 @@ final class VideoEditRendererTests {
             try await VideoEditRenderer(
                 sourceURL: source,
                 trim: TrimDescription(inPoint: 30, outPoint: 40),
+                orientation: orientation,
                 outputURL: output
             ).render()
         }
@@ -286,11 +300,12 @@ final class VideoEditRendererTests {
 
     /// An out-point past the end is clamped rather than refused — a trim stored against a
     /// slightly different duration is a rounding artifact, not a mistake.
-    @Test func clampsAnOutPointPastTheEndOfTheSource() async throws {
+    @Test(arguments: Self.assetPaths)
+    func clampsAnOutPointPastTheEndOfTheSource(orientation: OrientationEdit) async throws {
         let source = try await VideoTestFixture.makeTestVideo(duration: 4)
         defer { try? FileManager.default.removeItem(at: source) }
 
-        let output = try await Self.render(source, TrimDescription(inPoint: 1, outPoint: 30))
+        let output = try await Self.render(source, TrimDescription(inPoint: 1, outPoint: 30), orientation)
         defer { try? FileManager.default.removeItem(at: output) }
 
         let duration = try await AVURLAsset(url: output).load(.duration).seconds
@@ -302,8 +317,8 @@ final class VideoEditRendererTests {
     /// Both export paths must produce the same result. `#available(macOS 15, *)` is true on every
     /// current development and CI machine, so without forcing it the pre-15 branch — the one
     /// macOS 13/14 users actually run — would never execute anywhere before shipping.
-    @Test(arguments: [false, true])
-    func bothExportPathsProduceTheSameTrim(usesLegacyExportPath: Bool) async throws {
+    @Test(arguments: [false, true], Self.assetPaths)
+    func bothExportPathsProduceTheSameTrim(usesLegacyExportPath: Bool, orientation: OrientationEdit) async throws {
         let source = try await Self.videoWithAudio(duration: 8)
         defer { try? FileManager.default.removeItem(at: source) }
 
@@ -315,6 +330,7 @@ final class VideoEditRendererTests {
         let renderer = VideoEditRenderer(
             sourceURL: source,
             trim: TrimDescription(inPoint: 2, outPoint: 5),
+            orientation: orientation,
             outputURL: output
         )
         await renderer.setUsesLegacyExportPath(usesLegacyExportPath)
@@ -329,7 +345,8 @@ final class VideoEditRendererTests {
 
     /// The legacy path must report a refusal the same way the modern one does, rather than
     /// leaving a partial file behind.
-    @Test func legacyExportPathStillRefusesAnUnwritableContainer() async throws {
+    @Test(arguments: Self.assetPaths)
+    func legacyExportPathStillRefusesAnUnwritableContainer(orientation: OrientationEdit) async throws {
         let source = try await VideoTestFixture.makeTestVideo(duration: 4)
         defer { try? FileManager.default.removeItem(at: source) }
 
@@ -340,6 +357,7 @@ final class VideoEditRendererTests {
         let renderer = VideoEditRenderer(
             sourceURL: source,
             trim: TrimDescription(inPoint: 1, outPoint: 2),
+            orientation: orientation,
             outputURL: output
         )
         await renderer.setUsesLegacyExportPath(true)
@@ -352,12 +370,15 @@ final class VideoEditRendererTests {
 
     // MARK: - Helpers
 
-    private static func render(_ source: URL, _ trim: TrimDescription) async throws -> URL {
+    /// `.up` reads the source as an `AVURLAsset`; any other orientation reads it as an `AVMutableMovie`.
+    static let assetPaths: [OrientationEdit] = [.up, .right]
+
+    private static func render(_ source: URL, _ trim: TrimDescription, _ orientation: OrientationEdit = .up) async throws -> URL {
         let output = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
             .appendingPathExtension("mov")
 
-        return try await VideoEditRenderer(sourceURL: source, trim: trim, outputURL: output).render()
+        return try await VideoEditRenderer(sourceURL: source, trim: trim, orientation: orientation, outputURL: output).render()
     }
 
     /// Builds a two-track `.mov` by composing the synthetic video fixture with the bundled

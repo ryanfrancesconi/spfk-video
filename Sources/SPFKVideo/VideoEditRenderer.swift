@@ -5,7 +5,8 @@ import Foundation
 import SPFKBase
 import UniformTypeIdentifiers
 
-/// Applies a ``TrimDescription`` to a video file and writes the result to an output URL.
+/// Applies a ``TrimDescription`` and an `OrientationEdit` to a video file and writes the result to an
+/// output URL.
 ///
 /// Uses `AVAssetExportPresetPassthrough`, so the media is remuxed rather than re-encoded: every
 /// track is copied bit-for-bit and the export costs milliseconds rather than minutes. Trimming is
@@ -25,6 +26,10 @@ import UniformTypeIdentifiers
 /// deliberately no metadata-copy pass here, unlike ``AudioEditRenderer`` which must re-copy
 /// everything through its converter. `PassthroughMetadataProbeTests` guards that assumption.
 ///
+/// An orientation is written as each video track's matrix, so it re-encodes nothing either. A render
+/// with no orientation reads the source as an `AVURLAsset`, and one with an orientation as an
+/// `AVMutableMovie` — never a composition, which drops the asset's metadata.
+///
 /// Takes a ``TrimDescription`` rather than an audio edit type on purpose: this package must stay
 /// free of any audio dependency so TorchTag can reach it too.
 public actor VideoEditRenderer {
@@ -33,6 +38,9 @@ public actor VideoEditRenderer {
 
     /// The trim window to apply. An `outPoint` of 0 means "keep to the end of the file".
     public let trim: TrimDescription
+
+    /// Performed after what each video track displays now. `.up` changes nothing.
+    public let orientation: OrientationEdit
 
     /// The destination URL for the rendered output. Must not already exist.
     public let outputURL: URL
@@ -54,17 +62,19 @@ public actor VideoEditRenderer {
     /// tests set it per instance, which keeps them independent of that global. Not public.
     var usesLegacyExportPath = !OSVersion.macOS15.isAvailable
 
-    public init(sourceURL: URL, trim: TrimDescription, outputURL: URL) {
+    public init(sourceURL: URL, trim: TrimDescription, orientation: OrientationEdit = .up, outputURL: URL) {
         self.sourceURL = sourceURL
         self.trim = trim
+        self.orientation = orientation
         self.outputURL = outputURL
     }
 
-    /// Applies the trim and writes the result to ``outputURL``.
+    /// Applies the trim and orientation and writes the result to ``outputURL``.
     ///
     /// - Returns: The URL written, always ``outputURL``.
     /// - Throws: ``VideoEditError`` when the output exists, the container can't be written, the
-    ///   trim falls outside the source, or the export fails or is cancelled.
+    ///   trim falls outside the source, the export fails or is cancelled, or the output does not
+    ///   carry the orientation.
     @discardableResult
     public func render() async throws -> URL {
         try Task.checkCancellation()
@@ -80,7 +90,8 @@ public actor VideoEditRenderer {
             if didStartAccess { sourceURL.stopAccessingSecurityScopedResource() }
         }
 
-        let asset = AVURLAsset(url: sourceURL)
+        let oriented = try await VideoExport.orientedMovie(of: sourceURL, orientation: orientation)
+        let asset: AVAsset = oriented?.movie ?? AVURLAsset(url: sourceURL)
         let timeRange = try await VideoExport.timeRange(for: trim, in: asset)
 
         guard let session = AVAssetExportSession(
@@ -115,6 +126,10 @@ public actor VideoEditRenderer {
 
         try await verifyTracksSurvived(from: asset, to: outputURL)
 
+        if let oriented {
+            try await verifyOrientationWritten(oriented.transforms, to: outputURL)
+        }
+
         return outputURL
     }
 
@@ -137,12 +152,20 @@ public actor VideoEditRenderer {
         return .exportFailed(sourceURL, underlying: error)
     }
 
+    /// Throws unless every video track of the render carries the matrix it was given.
+    private func verifyOrientationWritten(_ transforms: [CGAffineTransform], to url: URL) async throws {
+        guard try await VideoExport.videoTransforms(at: url, match: transforms) else {
+            try? FileManager.default.removeItem(at: url)
+            throw VideoEditError.orientationNotWritten(sourceURL)
+        }
+    }
+
     /// Throws unless the render still carries the audio and video the source had.
     ///
     /// A passthrough export writes what the destination container accepts and reports `.completed`
     /// either way, so a dropped track arrives as success. The caller's next step is to replace the
     /// user's original with this file, which is the point of no return.
-    private func verifyTracksSurvived(from asset: AVURLAsset, to url: URL) async throws {
+    private func verifyTracksSurvived(from asset: AVAsset, to url: URL) async throws {
         let missing = try await VideoExport.missingTracks(source: asset, sourceURL: sourceURL, output: url, comparing: .count)
 
         guard missing.isEmpty else {
@@ -198,6 +221,12 @@ public actor VideoEditRenderer {
     /// selection; the session's own check at render time is what actually refuses.
     public static func canWriteContainer(of url: URL) -> Bool {
         !MXFMetadata.isMXF(url: url)
+    }
+
+    /// Whether an orientation can be written into this container without re-encoding: MOV, MP4 and
+    /// M4V. A protected file is refused by the caller, since that is not a container question.
+    public static func canWriteOrientation(of url: URL) -> Bool {
+        canWriteContainer(of: url) && ["mov", "mp4", "m4v"].contains(url.pathExtension.lowercased())
     }
 
     private static func fileType(for url: URL) throws -> AVFileType {

@@ -38,6 +38,9 @@ public enum VideoEditError: Error {
     /// A metadata write completed and the file came back without audio or video it had before.
     /// Unlike ``tracksLost(_:missing:)``, the file was changed. See ``MediaTrackInventory``.
     case tracksLostBySave(URL, missing: [String])
+
+    /// The export completed and a video track's matrix in the output is not the one written.
+    case orientationNotWritten(URL)
 }
 
 // MARK: - LocalizedError
@@ -74,6 +77,9 @@ extension VideoEditError: LocalizedError {
 
         case let .tracksLostBySave(url, missing):
             "Saving \(url.lastPathComponent) removed its \(missing.joined(separator: " and "))"
+
+        case let .orientationNotWritten(url):
+            "Rendering \(url.lastPathComponent) did not keep its rotation or flip — the file was left unchanged"
         }
     }
 }
