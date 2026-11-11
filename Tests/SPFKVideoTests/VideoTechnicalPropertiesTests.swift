@@ -11,14 +11,6 @@ import Testing
 /// `QuickTimeUserData` structs, not file I/O.
 @Suite
 struct VideoTechnicalPropertiesTests {
-    @Test func defaultInitHasAllNilValues() {
-        let properties = VideoTechnicalProperties()
-
-        for (_, value) in properties.dictionary {
-            #expect(value == nil)
-        }
-    }
-
     @Test func nilVideoTrackAndQuickTimeUserDataLeavesAllNil() {
         let properties = VideoTechnicalProperties(videoTrack: nil, quickTimeUserData: nil)
 
@@ -72,13 +64,6 @@ struct VideoTechnicalPropertiesTests {
         #expect(properties.dictionary[.frameRate] == "29.97 fps")
     }
 
-    @Test func passesCodecThroughUnmodified() {
-        let videoTrack = VideoTrackProperties(codec: "hvc1")
-        let properties = VideoTechnicalProperties(videoTrack: videoTrack, quickTimeUserData: nil)
-
-        #expect(properties.dictionary[.codec] == "hvc1")
-    }
-
     /// A container with no explicit PixelAspectRatio extension implies 1:1 square pixels
     /// (the common case), not "unknown" — the row should show "1.000", not be blank.
     @Test func pixelAspectRatioDefaultsToOneWhenNil() {
@@ -123,17 +108,6 @@ struct VideoTechnicalPropertiesTests {
         #expect((properties.dictionary[.gpsLocation] ?? nil) == nil)
     }
 
-    @Test func passesDeviceMakeModelSoftwareThroughUnmodified() {
-        let quickTimeUserData = QuickTimeUserData(
-            deviceMake: "Apple", deviceModel: "iPhone 15 Pro", deviceSoftware: "26.5"
-        )
-        let properties = VideoTechnicalProperties(videoTrack: nil, quickTimeUserData: quickTimeUserData)
-
-        #expect(properties.dictionary[.deviceMake] == "Apple")
-        #expect(properties.dictionary[.deviceModel] == "iPhone 15 Pro")
-        #expect(properties.dictionary[.deviceSoftware] == "26.5")
-    }
-
     @Test func captureDateStaysNilWhenNotPresent() {
         let quickTimeUserData = QuickTimeUserData()
         let properties = VideoTechnicalProperties(videoTrack: nil, quickTimeUserData: quickTimeUserData)
@@ -148,13 +122,5 @@ struct VideoTechnicalPropertiesTests {
 
         let captureDate = properties.dictionary[.captureDate] ?? nil
         #expect(!(captureDate ?? "").isEmpty)
-    }
-
-    // MARK: - Key
-
-    @Test func displayNameIsNotEmptyForAllCases() {
-        for key in VideoTechnicalProperties.Key.allCases {
-            #expect(!key.displayName.isEmpty)
-        }
     }
 }

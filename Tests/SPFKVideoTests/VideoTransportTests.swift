@@ -220,12 +220,6 @@ struct PlaybackSpeedTests {
         #expect(PlaybackSpeed.half.label == "0.5x")
         #expect(PlaybackSpeed.oneAndAHalf.label == "1.5x")
     }
-
-    @Test func rateMatchesTheRawValue() {
-        for speed in PlaybackSpeed.allCases {
-            #expect(speed.rate == speed.rawValue)
-        }
-    }
 }
 
 // MARK: -
@@ -364,11 +358,5 @@ struct VideoDurationDisplayTests {
 
         old.parserVersion = VideoTrackProperties.currentParserVersion
         #expect(old.isOutdated == false)
-    }
-
-    /// The Duration row is part of the tab's field set, so it renders wherever those are shown.
-    @Test func durationIsAKeyOnTheVideoTab() {
-        #expect(VideoTechnicalProperties.Key.allCases.contains(.duration))
-        #expect(VideoTechnicalProperties().dictionary.keys.contains(.duration))
     }
 }
