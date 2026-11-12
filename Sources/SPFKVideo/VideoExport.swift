@@ -21,14 +21,27 @@ enum VideoExport {
     /// was cancelled, and otherwise the session's own error.
     ///
     /// `legacy` takes the pre-macOS 15 path, where `export(to:as:)` is unavailable. Runs on the caller's
-    /// actor, which may hold the session.
+    /// actor, which may hold the session. `progress` is called with the session's fraction, 0...1, at once
+    /// and then every 200 ms until the export returns.
     static func run(
         _ session: AVAssetExportSession,
         to url: URL,
         as fileType: AVFileType,
         legacy: Bool,
+        progress: (@Sendable (Double) async -> Void)? = nil,
         isolation: isolated (any Actor)? = #isolation
     ) async throws {
+        let poller = progress.map { report in
+            let shared = SharedSession(session: session)
+
+            return Task {
+                while !Task.isCancelled {
+                    await report(Double(shared.session.progress))
+                    try? await Task.sleep(for: .milliseconds(200))
+                }
+            }
+        }
+
         do {
             if #available(macOS 15, iOS 18, *), !legacy {
                 // Takes the destination directly: `outputURL`/`outputFileType` must not also be set.
@@ -37,8 +50,20 @@ enum VideoExport {
                 try await runPreMacOS15(session, to: url, as: fileType)
             }
         } catch let error as AVError where error.code == .operationCancelled {
+            await stop(poller)
             throw CancellationError()
+        } catch {
+            await stop(poller)
+            throw error
         }
+
+        await stop(poller)
+    }
+
+    /// Awaited so that no report arrives after ``run(_:to:as:legacy:progress:isolation:)`` returns.
+    private static func stop(_ poller: Task<Void, Never>?) async {
+        poller?.cancel()
+        await poller?.value
     }
 
     /// Deletes cleanly along with its call site once the deployment target reaches macOS 15.
@@ -51,8 +76,7 @@ enum VideoExport {
         session.outputURL = url
         session.outputFileType = fileType
 
-        // `cancelExport()` may be called from any thread.
-        let cancel = SessionCancel(session: session)
+        let cancel = SharedSession(session: session)
 
         await withTaskCancellationHandler {
             await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
@@ -72,7 +96,8 @@ enum VideoExport {
         }
     }
 
-    private final class SessionCancel: @unchecked Sendable {
+    /// `cancelExport()` and `progress` may be called from any thread.
+    private final class SharedSession: @unchecked Sendable {
         let session: AVAssetExportSession
 
         init(session: AVAssetExportSession) {

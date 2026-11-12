@@ -77,6 +77,13 @@ public actor VideoEditRenderer {
     ///   carry the orientation.
     @discardableResult
     public func render() async throws -> URL {
+        try await render(progress: nil)
+    }
+
+    /// ``render()``, calling `progress` with the export's fraction, 0...1, at once and then every 200 ms
+    /// until the export returns. Nothing is reported after this returns.
+    @discardableResult
+    public func render(progress: (@Sendable (Double) async -> Void)?) async throws -> URL {
         try Task.checkCancellation()
 
         guard !outputURL.exists else {
@@ -116,7 +123,9 @@ public actor VideoEditRenderer {
         defer { self.session = nil }
 
         do {
-            try await VideoExport.run(session, to: outputURL, as: outputFileType, legacy: usesLegacyExportPath)
+            try await VideoExport.run(
+                session, to: outputURL, as: outputFileType, legacy: usesLegacyExportPath, progress: progress
+            )
         } catch {
             // A failed or cancelled export can still leave a partial file behind, and the
             // caller's next step is typically to replace the original with it.

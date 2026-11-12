@@ -25,7 +25,10 @@ public struct VideoFormatConverter: Sendable {
 
     /// Converts the source and returns it as written, its output renamed by a `.unique` conflict. Neither
     /// `input` nor `originalInput` is ever written.
-    public func convert() async throws -> VideoConversionSource {
+    ///
+    /// `progress` is called with the export's fraction, 0...1, at once and then every 200 ms until the export
+    /// returns.
+    public func convert(progress: (@Sendable (Double) async -> Void)? = nil) async throws -> VideoConversionSource {
         try Task.checkCancellation()
 
         // Ahead of the conflict handling, which replaces an existing output.
@@ -66,7 +69,13 @@ public struct VideoFormatConverter: Sendable {
         let written = workDirectory.appending(component: converted.output.lastPathComponent, directoryHint: .notDirectory)
 
         do {
-            try await VideoExport.run(session, to: written, as: source.options.container.fileType, legacy: usesLegacyExportPath)
+            try await VideoExport.run(
+                session,
+                to: written,
+                as: source.options.container.fileType,
+                legacy: usesLegacyExportPath,
+                progress: progress
+            )
         } catch is CancellationError {
             throw CancellationError()
         } catch {
