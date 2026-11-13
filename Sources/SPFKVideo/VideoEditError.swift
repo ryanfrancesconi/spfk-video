@@ -41,6 +41,12 @@ public enum VideoEditError: Error {
 
     /// The export completed and a video track's matrix in the output is not the one written.
     case orientationNotWritten(URL)
+
+    /// The video's codec has no preset to re-encode it with: ProRes RAW.
+    case cannotReencode(URL)
+
+    /// A re-encode mixes audio tracks into one, and this file has more than one.
+    case multipleAudioTracks(URL)
 }
 
 // MARK: - LocalizedError
@@ -80,6 +86,12 @@ extension VideoEditError: LocalizedError {
 
         case let .orientationNotWritten(url):
             "Rendering \(url.lastPathComponent) did not keep its rotation or flip - the file was left unchanged"
+
+        case let .cannotReencode(url):
+            "\(url.lastPathComponent) is ProRes RAW, which can't be re-encoded with adjustments"
+
+        case let .multipleAudioTracks(url):
+            "\(url.lastPathComponent) has more than one audio track, which re-encoding with adjustments would mix into one"
         }
     }
 }

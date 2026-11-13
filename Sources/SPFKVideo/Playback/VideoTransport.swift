@@ -39,6 +39,17 @@ public final class VideoTransport {
 
     public private(set) var url: URL?
 
+    /// Applied to the current item. ``load(url:)`` and ``unload()`` clear it: a composition is built
+    /// from one asset.
+    public var videoComposition: AVVideoComposition? {
+        didSet { player.currentItem?.videoComposition = videoComposition }
+    }
+
+    /// The loaded item's asset, to build a ``videoComposition`` from.
+    public var asset: AVAsset? {
+        player.currentItem?.asset
+    }
+
     /// The speed `play()` will use. Setting this while playing changes speed immediately.
     ///
     /// A speed the current item cannot manage is kept as the *selection* but not applied, so
@@ -150,6 +161,7 @@ public final class VideoTransport {
             self.endObserver = nil
         }
 
+        videoComposition = nil
         player.replaceCurrentItem(with: nil)
         url = nil
         playbackEndTime = nil
@@ -159,6 +171,13 @@ public final class VideoTransport {
 
         // The selection itself survives, so loading a file that carries the same track restores it.
         availableAudioTracks = []
+    }
+
+    /// Re-renders the shown frame through ``videoComposition`` without seeking: a paused item redraws
+    /// only when it is given a composition again.
+    public func redrawVideoComposition() {
+        guard let videoComposition, let item = player.currentItem else { return }
+        item.videoComposition = videoComposition.mutableCopy() as? AVVideoComposition
     }
 
     // MARK: - State

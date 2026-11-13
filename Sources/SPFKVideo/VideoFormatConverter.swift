@@ -38,6 +38,10 @@ public struct VideoFormatConverter: Sendable {
             throw VideoConversionError.outputReplacesInput(protected)
         }
 
+        if source.filter != nil, source.options.preset == .passthrough {
+            throw VideoConversionError.filterNeedsReencode(source.input)
+        }
+
         var converted = source
 
         if converted.output.exists {
@@ -140,6 +144,10 @@ public struct VideoFormatConverter: Sendable {
 
         if let trim = source.trim, !trim.isEmpty {
             session.timeRange = try await VideoExport.timeRange(for: trim, in: asset)
+        }
+
+        if let filter = source.filter {
+            session.videoComposition = try await VideoFrameFilter.composition(for: asset, filter: filter)
         }
 
         return session

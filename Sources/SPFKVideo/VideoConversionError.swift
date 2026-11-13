@@ -27,6 +27,9 @@ public enum VideoConversionError: LocalizedError {
     /// The export completed without audio or video the input had.
     case tracksLost(URL, missing: [String])
 
+    /// The source carries a frame filter, which Passthrough cannot render.
+    case filterNeedsReencode(URL)
+
     public var errorDescription: String? {
         switch self {
         case let .outputReplacesInput(url):
@@ -55,6 +58,9 @@ public enum VideoConversionError: LocalizedError {
 
         case let .tracksLost(_, missing):
             "Converting would have dropped its \(missing.joined(separator: " and "))."
+
+        case let .filterNeedsReencode(url):
+            "Passthrough can't apply the adjustments to \(url.lastPathComponent). Choose a preset that re-encodes."
         }
     }
 }

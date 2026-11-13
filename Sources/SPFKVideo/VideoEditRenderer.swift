@@ -30,6 +30,9 @@ import UniformTypeIdentifiers
 /// with no orientation reads the source as an `AVURLAsset`, and one with an orientation as an
 /// `AVMutableMovie` - never a composition, which drops the asset's metadata.
 ///
+/// A ``filter`` is the exception: it changes pixels, so the render re-encodes with
+/// ``reencodePreset(for:)`` through a ``VideoFrameFilter`` composition, which bakes the orientation in.
+///
 /// Takes a ``TrimDescription`` rather than an audio edit type on purpose: this package must stay
 /// free of any audio dependency so TorchTag can reach it too.
 public actor VideoEditRenderer {
@@ -41,6 +44,9 @@ public actor VideoEditRenderer {
 
     /// Performed after what each video track displays now. `.up` changes nothing.
     public let orientation: OrientationEdit
+
+    /// Run on every frame. Non-nil re-encodes the video.
+    public let filter: VideoFrameFilter?
 
     /// The destination URL for the rendered output. Must not already exist.
     public let outputURL: URL
@@ -62,10 +68,17 @@ public actor VideoEditRenderer {
     /// tests set it per instance, which keeps them independent of that global. Not public.
     var usesLegacyExportPath = !OSVersion.macOS15.isAvailable
 
-    public init(sourceURL: URL, trim: TrimDescription, orientation: OrientationEdit = .up, outputURL: URL) {
+    public init(
+        sourceURL: URL,
+        trim: TrimDescription,
+        orientation: OrientationEdit = .up,
+        filter: VideoFrameFilter? = nil,
+        outputURL: URL
+    ) {
         self.sourceURL = sourceURL
         self.trim = trim
         self.orientation = orientation
+        self.filter = filter
         self.outputURL = outputURL
     }
 
@@ -101,11 +114,14 @@ public actor VideoEditRenderer {
         let asset: AVAsset = oriented?.movie ?? AVURLAsset(url: sourceURL)
         let timeRange = try await VideoExport.timeRange(for: trim, in: asset)
 
-        guard let session = AVAssetExportSession(
-            asset: asset,
-            presetName: AVAssetExportPresetPassthrough
-        ) else {
+        let presetName = filter == nil ? AVAssetExportPresetPassthrough : try await reencodePresetName(for: asset)
+
+        guard let session = AVAssetExportSession(asset: asset, presetName: presetName) else {
             throw VideoEditError.exportUnavailable(sourceURL)
+        }
+
+        if let filter {
+            session.videoComposition = try await VideoFrameFilter.composition(for: asset, filter: filter)
         }
 
         // Asked of the session rather than checked against a list of known-bad extensions, so a
@@ -135,7 +151,9 @@ public actor VideoEditRenderer {
 
         try await verifyTracksSurvived(from: asset, to: outputURL)
 
-        if let oriented {
+        if filter != nil {
+            try await verifyOrientationRendered(from: asset, to: outputURL)
+        } else if let oriented {
             try await verifyOrientationWritten(oriented.transforms, to: outputURL)
         }
 
@@ -175,7 +193,9 @@ public actor VideoEditRenderer {
     /// either way, so a dropped track arrives as success. The caller's next step is to replace the
     /// user's original with this file, which is the point of no return.
     private func verifyTracksSurvived(from asset: AVAsset, to url: URL) async throws {
-        let missing = try await VideoExport.missingTracks(source: asset, sourceURL: sourceURL, output: url, comparing: .count)
+        let missing = try await VideoExport.missingTracks(
+            source: asset, sourceURL: sourceURL, output: url, comparing: filter == nil ? .count : .presence
+        )
 
         guard missing.isEmpty else {
             try? FileManager.default.removeItem(at: url)

@@ -22,6 +22,9 @@ public struct VideoConversionSource: Sendable {
     /// Rendered into the output, after what each video track displays now.
     public var orientation: OrientationEdit
 
+    /// Run on every frame. Non-nil needs a preset that re-encodes.
+    public var filter: VideoFrameFilter?
+
     /// Whether the input's Finder tags are copied to the output.
     public var copiesFinderTags: Bool
 
@@ -33,6 +36,7 @@ public struct VideoConversionSource: Sendable {
         conflictScheme: FileConflictScheme = .overwrite,
         trim: TrimDescription? = nil,
         orientation: OrientationEdit = .up,
+        filter: VideoFrameFilter? = nil,
         copiesFinderTags: Bool = true
     ) {
         self.input = input
@@ -42,6 +46,7 @@ public struct VideoConversionSource: Sendable {
         self.conflictScheme = conflictScheme
         self.trim = trim
         self.orientation = orientation
+        self.filter = filter
         self.copiesFinderTags = copiesFinderTags
     }
 }
