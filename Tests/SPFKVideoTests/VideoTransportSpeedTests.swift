@@ -40,7 +40,7 @@ struct VideoTransportSpeedTests {
         }
     }
 
-    /// An available selection is played as chosen — the clamp must not be a blanket reset.
+    /// An available selection is played as chosen - the clamp must not be a blanket reset.
     @Test func anAvailableSelectionIsTheEffectiveSpeed() async {
         let transport = await loadedTransport()
 

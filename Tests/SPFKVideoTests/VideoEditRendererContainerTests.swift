@@ -35,7 +35,7 @@ struct VideoEditRendererContainerTests {
         let types = session.supportedFileTypes
         #expect(types.contains(AVFileType(rawValue: "org.smpte.mxf")) == false)
 
-        // Not an empty list — the session works, it simply cannot write this container.
+        // Not an empty list - the session works, it simply cannot write this container.
         #expect(types.contains(.mov))
     }
 }

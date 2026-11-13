@@ -48,7 +48,7 @@ struct VideoTransportAudioTrackTests {
         #expect(enabledAudioTrackIDs(transport) == [japanese.id])
     }
 
-    /// Switching back is the same operation, not a special case — a second selection must not
+    /// Switching back is the same operation, not a special case - a second selection must not
     /// leave the first one enabled alongside it.
     @Test func switchingBackEnablesOnlyTheOtherTrack() async {
         let transport = await loadedTransport()

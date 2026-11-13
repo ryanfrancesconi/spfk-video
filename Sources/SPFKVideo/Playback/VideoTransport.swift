@@ -193,7 +193,7 @@ public final class VideoTransport {
     /// The speed the loaded item will actually be played at.
     ///
     /// Differs from ``speed`` only when the selection is one this item cannot manage, which is
-    /// deliberately kept rather than reset — see there. **This is what a readout should show**:
+    /// deliberately kept rather than reset - see there. **This is what a readout should show**:
     /// displaying the selection instead means a bar reading `0.25x` over a file playing at `1x`,
     /// which is knowable the moment the item is ready rather than a surprise at the first press of
     /// play.
@@ -215,7 +215,7 @@ public final class VideoTransport {
     /// single-track file wants and what an untouched multi-track file falls back to.
     ///
     /// Kept as the *selection* even when the loaded item does not carry it, so switching to a file
-    /// that does resumes the user's intent — the same rule ``speed`` follows.
+    /// that does resumes the user's intent - the same rule ``speed`` follows.
     public var selectedAudioTrack: AudioTrackDescription.ID? {
         didSet {
             guard selectedAudioTrack != oldValue else { return }
@@ -227,7 +227,7 @@ public final class VideoTransport {
     ///
     /// `AVPlayerItemTrack.isEnabled` rather than `selectMediaOption(_:in:)`: an
     /// `AVMediaSelectionOption` exposes no track identifier, so mapping a chosen track onto an
-    /// option means matching on display name or language — which two tracks of one language make
+    /// option means matching on display name or language - which two tracks of one language make
     /// ambiguous. Per-track enabling keys on `trackID` and works whether or not the container
     /// declares an audible group.
     ///
@@ -241,7 +241,7 @@ public final class VideoTransport {
         let audioTracks = item.tracks.filter { $0.assetTrack?.mediaType == .audio }
 
         // A selection naming no loaded track leaves the item alone rather than silencing every
-        // track — a stale choice should not make the file mute.
+        // track - a stale choice should not make the file mute.
         guard audioTracks.contains(where: { $0.matches(selectedAudioTrack) }) else { return }
 
         for track in audioTracks {
@@ -311,7 +311,7 @@ public final class VideoTransport {
     /// Steps whole frames, forward on a positive count and backward on a negative one.
     ///
     /// Uses `AVPlayerItem.step(byCount:)` rather than seeking by a computed frame duration, so it
-    /// lands on real frame boundaries without this type needing to know the frame rate — which is
+    /// lands on real frame boundaries without this type needing to know the frame rate - which is
     /// not constant in every container anyway.
     ///
     /// Stepping pauses first: a frame step during playback is immediately overtaken and reads as

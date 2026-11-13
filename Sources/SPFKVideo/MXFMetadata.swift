@@ -9,8 +9,8 @@ import SPFKBase
 ///
 /// The counterpart to ``QuickTimeUserData`` for the other container AVFoundation reads but no tag
 /// store can open, and modeled the same way: named fields for what a reader would want, rather than
-/// every identifier the keyspace can carry. The ones left out are opaque — UMIDs, generation and
-/// product UUIDs, partition counts, the `*ID` twin of each colorimetry field — and describe the
+/// every identifier the keyspace can carry. The ones left out are opaque - UMIDs, generation and
+/// product UUIDs, partition counts, the `*ID` twin of each colorimetry field - and describe the
 /// file's identity to another tool, not to a person.
 ///
 /// **Nothing here can be written.** MXF is absent from TagLib and from the XMP toolkit's handlers,
@@ -19,7 +19,7 @@ import SPFKBase
 /// **Requires ``ProVideoFormats/register()``.** Without Apple's Pro Video Formats plug-ins the
 /// asset does not open at all and every field is `nil`.
 public struct MXFMetadata: Hashable, Sendable, Codable {
-    // MARK: Identification — what wrote the file
+    // MARK: Identification - what wrote the file
 
     /// e.g. `Adobe Media Encoder`.
     public var applicationName: String?
@@ -41,7 +41,7 @@ public struct MXFMetadata: Hashable, Sendable, Codable {
 
     // MARK: Material
 
-    /// The material package's own name — the closest thing MXF has to a title.
+    /// The material package's own name - the closest thing MXF has to a title.
     public var packageName: String?
 
     public var materialCreationDate: Date?
@@ -59,7 +59,7 @@ public struct MXFMetadata: Hashable, Sendable, Codable {
     /// The Final Cut "Share" set, which Apple's reader surfaces under its own
     /// `com.apple.proapps.share.*` identifiers rather than SMPTE's.
     ///
-    /// **These are tag vocabulary, not technical facts** — a file out of Final Cut or Compressor can
+    /// **These are tag vocabulary, not technical facts** - a file out of Final Cut or Compressor can
     /// carry a creator and a description where the SMPTE keyspace carries none. Reading them does
     /// not make MXF writable.
     public var creator: String?
@@ -106,7 +106,7 @@ public extension MXFMetadata {
         case tvNetwork
 
         /// - Note: a per-case `switch` with literal `localized(...)` calls rather than
-        /// `localized(rawValue)` — extraction only picks up literal arguments at the call site.
+        /// `localized(rawValue)` - extraction only picks up literal arguments at the call site.
         public var displayName: String {
             switch self {
             case .applicationSupplier: localized("Vendor")
@@ -133,7 +133,7 @@ public extension MXFMetadata {
         }
     }
 
-    /// The field's display string, or `nil` when this file states nothing for it — which is most of
+    /// The field's display string, or `nil` when this file states nothing for it - which is most of
     /// them for most files, since which identifiers an MXF carries is the writing application's
     /// choice.
     func value(for field: Field) -> String? {
@@ -175,7 +175,7 @@ public extension MXFMetadata {
 // MARK: - Reading
 
 public extension MXFMetadata {
-    /// AVFoundation's format name for the keyspace. No SDK constant exists for it — `mxf` appears
+    /// AVFoundation's format name for the keyspace. No SDK constant exists for it - `mxf` appears
     /// nowhere in the AVFoundation, CoreMedia or MediaToolbox headers.
     static let metadataFormat = AVMetadataFormat(rawValue: "org.smpte.mxf")
 
@@ -252,7 +252,7 @@ public extension MXFMetadata {
     }
 
     /// A cheap pre-check so a selection change does not open an asset for every file just to find
-    /// no MXF keyspace. **Not the authority** — ``read(from:url:)`` answers from the keyspace the
+    /// no MXF keyspace. **Not the authority** - ``read(from:url:)`` answers from the keyspace the
     /// file declares, and returns `nil` for anything this would wave through.
     ///
     /// Here rather than in each product so the two cannot drift, which is how format tests usually
@@ -265,7 +265,7 @@ public extension MXFMetadata {
     ///
     /// **Never `item.load(.dateValue)` here.** These items arrive as
     /// `com.apple.metadata.datatype.UTF-8` holding `2021-07-30 04:06:08 +0000`, and `dateValue`
-    /// does not decline a string it cannot read — it returns a *fabricated* date. Measured: that
+    /// does not decline a string it cannot read - it returns a *fabricated* date. Measured: that
     /// exact value came back as `12198-05-07`, which reached the panel as "May 7, 12198".
     ///
     /// Not ISO 8601 either, which rejects the space separator outright.

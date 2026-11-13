@@ -40,7 +40,7 @@ extension AudioTrackReader {
     ///
     /// For the containers `AVAudioFile` refuses: it is ExtAudioFile underneath, a stack that
     /// MediaToolbox format readers do not serve, so a file that plays perfectly through `AVAsset`
-    /// can still fail to open there — MXF does, before and after ``ProVideoFormats/register()``.
+    /// can still fail to open there - MXF does, before and after ``ProVideoFormats/register()``.
     ///
     /// - Returns: `nil` when the file has no audio track, or none whose format description loads.
     public static func format(of url: URL) async -> AudioTrackFormat? {

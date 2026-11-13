@@ -8,13 +8,13 @@ import SPFKFileSystem
 /// Disk cache for extracted video frames, keyed by source video and requested timestamp.
 ///
 /// Layout: `<inDirectory>/Data/Video/<fileKey>/<timestampMs>_thumb.jpg` and
-/// `.../<timestampMs>_full.jpg` — one subdirectory per video (keyed by `url.sha256`), tier
+/// `.../<timestampMs>_full.jpg` - one subdirectory per video (keyed by `url.sha256`), tier
 /// distinguished by filename suffix. This mirrors `ImageDataStore`'s `_thumb`/`_full`
 /// convention combined with a per-source-file subdirectory, the right shape for
 /// many-frames-per-file data (as opposed to `BookmarkDataStore`'s 256-shard hash-prefix
 /// scheme, built for one-entry-per-file data).
 ///
-/// Frames are stored as JPEG — many frames per file makes format choice matter more here
+/// Frames are stored as JPEG - many frames per file makes format choice matter more here
 /// than for a one-entry-per-file cache.
 public actor VideoFrameDataStore {
     public nonisolated let directoryURL: URL
@@ -90,7 +90,7 @@ extension VideoFrameDataStore {
     /// Removes every cached frame (both tiers, all timestamps) for the given video.
     ///
     /// Single-video invalidation, reached through `deleteVideoFrames(for:)` when a file is saved
-    /// over or rewritten externally — frames are keyed by URL and timestamp with no freshness
+    /// over or rewritten externally - frames are keyed by URL and timestamp with no freshness
     /// check, so the cache would otherwise keep serving the previous edit's timeline.
     /// `prune(activeURLs:)`/`prune(activeKeys:)` handle bulk eviction instead.
     public func delete(url: URL) {
@@ -156,7 +156,7 @@ extension VideoFrameDataStore {
     /// Removes every cached frame for every video, leaving the root directory in place.
     ///
     /// The manual "Empty Cache" control's counterpart to `prune(activeKeys:)`'s automatic
-    /// housekeeping — everything goes, and each video re-extracts the next time it is shown.
+    /// housekeeping - everything goes, and each video re-extracts the next time it is shown.
     public func deleteAll() {
         let fm = FileManager.default
         guard let fileDirs = try? fm.contentsOfDirectory(
@@ -178,7 +178,7 @@ extension VideoFrameDataStore {
 
     /// Total number of cached frames (both tiers, across every video).
     ///
-    /// Not currently called in production — kept for diagnostics/debugging and to mirror
+    /// Not currently called in production - kept for diagnostics/debugging and to mirror
     /// `count()` on sibling stores.
     public func count() -> Int {
         let fm = FileManager.default

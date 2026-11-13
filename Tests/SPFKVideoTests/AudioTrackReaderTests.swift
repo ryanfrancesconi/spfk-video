@@ -8,14 +8,14 @@ import Testing
 @testable import SPFKVideo
 
 struct AudioTrackReaderTests {
-    /// The fixture's two tone tracks, named and languaged — everything a picker draws a row from.
+    /// The fixture's two tone tracks, named and languaged - everything a picker draws a row from.
     @Test func readsBothTracksOfADualAudioMovie() async {
         let tracks = await AudioTrackReader.read(from: TestBundleResources.shared.sample_dualaudio_mov)
 
         #expect(tracks.count == 2)
         #expect(tracks.map(\.language) == ["eng", "jpn"])
         #expect(tracks.map(\.displayName) == ["English", "Japanese"])
-        // `"aac"`, not `"aac "` — a four-character code pads with spaces and this one reaches a
+        // `"aac"`, not `"aac "` - a four-character code pads with spaces and this one reaches a
         // menu row.
         #expect(tracks.allSatisfy { $0.codec == "aac" })
         #expect(tracks.allSatisfy { $0.channelCount == 1 })

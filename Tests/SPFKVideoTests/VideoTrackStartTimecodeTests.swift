@@ -26,7 +26,7 @@ final class VideoTrackStartTimecodeTests {
         #expect(start.components.frames == 1)
     }
 
-    /// A file whose timecode track reads zero is stating a start, not failing to state one — the
+    /// A file whose timecode track reads zero is stating a start, not failing to state one - the
     /// resolver's precedence depends on telling those apart.
     @Test func readsZeroStartAsPresent() async throws {
         let url = TestBundleResources.shared.sample_timecode_mov
@@ -74,7 +74,7 @@ final class VideoTrackStartTimecodeTests {
     }
 
     /// The rate and the stored string come from one read and have to stay consistent. When they
-    /// aren't, the position is unrepresentable rather than approximately right — 30 frames is not a
+    /// aren't, the position is unrepresentable rather than approximately right - 30 frames is not a
     /// valid frame number at 29.97.
     @Test func startTimecodeIsNilWhenStringDoesNotFitTheRate() {
         let properties = VideoTrackProperties(

@@ -166,7 +166,7 @@ struct VideoTransportTests {
         #expect(abs(transport.currentTime - 1.0) < 0.05, "settled at \(transport.currentTime)")
     }
 
-    /// Reported once the playhead settles rather than at every waypoint — a playhead seed rebuilt
+    /// Reported once the playhead settles rather than at every waypoint - a playhead seed rebuilt
     /// against a superseded position is stale before it is used.
     @Test func aBurstOfSeeksReportsFewerCompletionsThanRequests() async {
         let transport = await loadedTransport()
@@ -230,7 +230,7 @@ struct VideoTransportSteppingTests {
         await VideoTransport.loaded(url: TestBundleResources.shared.sample_mov)
     }
 
-    /// Nothing loaded means nothing to step — and no trap on a nil item.
+    /// Nothing loaded means nothing to step - and no trap on a nil item.
     @Test func steppingAnUnloadedTransportIsSafe() {
         let transport = VideoTransport()
 
@@ -272,7 +272,7 @@ struct VideoTransportSteppingTests {
         #expect(transport.currentTime <= transport.duration + 0.01)
     }
 
-    /// A frame step during playback would be immediately overtaken, so it pauses first — otherwise
+    /// A frame step during playback would be immediately overtaken, so it pauses first - otherwise
     /// the command reads as having done nothing.
     @Test func steppingPausesPlayback() async {
         let transport = await loadedTransport()
@@ -293,7 +293,7 @@ struct VideoTransportSteppingTests {
 // MARK: -
 
 struct VideoDurationDisplayTests {
-    /// Duration reads as SMPTE timecode, which is how an edit is actually specified — and how the
+    /// Duration reads as SMPTE timecode, which is how an edit is actually specified - and how the
     /// transport's own position readout reads, so the two agree.
     @Test func aDurationWithAFrameRateReadsAsTimecode() throws {
         let text = try #require(
@@ -305,7 +305,7 @@ struct VideoDurationDisplayTests {
     }
 
     /// Always timecode, never seconds. The column is a timecode column, so `61.50 s` sitting under
-    /// the same heading as `00:01:01:15` is a second unit in disguise — a zero timecode at least
+    /// the same heading as `00:01:01:15` is a second unit in disguise - a zero timecode at least
     /// reads in the units the column claims.
     @Test func noFrameRateReadsAsAZeroTimecode() {
         let text = VideoTechnicalProperties.durationString(seconds: 61.5, frameRate: nil)
@@ -316,7 +316,7 @@ struct VideoDurationDisplayTests {
 
     /// A container that states an approximate rate still has a real one. Matroska gives a frame
     /// duration in whole nanoseconds, so 33333333ns never matches 1/30 exactly and the precise
-    /// matcher returns nothing — without this the duration fell back to raw seconds for every
+    /// matcher returns nothing - without this the duration fell back to raw seconds for every
     /// `.mkv`.
     @Test func aNominalRateResolvesToTheNearestStandardRate() {
         let approximate = VideoTrackProperties(nominalFrameRate: 23.98)
@@ -326,7 +326,7 @@ struct VideoDurationDisplayTests {
         #expect(thirty.timecodeFrameRate == .fps30)
     }
 
-    /// The precisely resolved rate wins when there is one — the nominal value is a lossy `Float`
+    /// The precisely resolved rate wins when there is one - the nominal value is a lossy `Float`
     /// and only stands in for a rate that could not be resolved exactly.
     @Test func aPreciseRateTakesPriorityOverTheNominalOne() {
         let properties = VideoTrackProperties(nominalFrameRate: 30.0, preciseFrameRate: .fps29_97)

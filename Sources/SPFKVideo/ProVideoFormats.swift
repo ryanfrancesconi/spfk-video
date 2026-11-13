@@ -13,7 +13,7 @@ import UniformTypeIdentifiers
 /// the pro codec family (DNxHD, AVC-Intra, IMX, DVCPRO HD).
 ///
 /// Those plug-ins ship in Apple's separate "Pro Video Formats" package, so this is a runtime
-/// capability rather than a property of the OS version — where they are absent both registrations
+/// capability rather than a property of the OS version - where they are absent both registrations
 /// are no-ops and ``isAvailable`` is `false`. Registration also opts into any third-party
 /// MediaExtension format readers the user has installed, which then run in this process.
 public enum ProVideoFormats {
@@ -28,13 +28,13 @@ public enum ProVideoFormats {
     /// Whether registration produced a professional format reader.
     ///
     /// `org.smpte.mxf` conforms to `public.movie` whether or not anything can read it, so no UTI or
-    /// extension check can answer this — only the probe below can.
+    /// extension check can answer this - only the probe below can.
     public static var isAvailable: Bool { !addedContentTypes.isEmpty }
 
     /// The content types registration added, for open-panel filtering and messaging.
     public static var registeredContentTypes: [UTType] { addedContentTypes }
 
-    /// Whether this file is unreadable *only* because the plug-ins are absent — a state the user
+    /// Whether this file is unreadable *only* because the plug-ins are absent - a state the user
     /// can fix, unlike an unsupported container.
     ///
     /// Worth distinguishing because the two look identical from the outside: without this, an MXF
@@ -46,7 +46,7 @@ public enum ProVideoFormats {
 
     /// The remedy, for a caller to compose its own sentence around.
     ///
-    /// **Says relaunch because registration is one-shot per process** — ``register()`` resolves
+    /// **Says relaunch because registration is one-shot per process** - ``register()`` resolves
     /// once, so a process that started without the plug-ins keeps answering `false` however many
     /// are installed afterwards.
     public static var installMessage: String {

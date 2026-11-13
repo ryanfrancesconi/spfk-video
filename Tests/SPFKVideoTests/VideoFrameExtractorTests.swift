@@ -99,7 +99,7 @@ struct VideoFrameExtractorTests {
     /// audio track's duration (a real-world container mismatch, not test-only), so a caller
     /// sampling against the audio track's length can request a timestamp past the video's
     /// actual end. `AVAssetImageGenerator` fails such a request outright ("Cannot Open")
-    /// rather than clamping to the nearest valid frame — verify the extractor drops it up
+    /// rather than clamping to the nearest valid frame - verify the extractor drops it up
     /// front instead of throwing and discarding the rest of the batch.
     @Test("Timestamp at or beyond the asset's duration is dropped, not thrown")
     func timestampBeyondDurationIsDropped() async throws {
@@ -138,7 +138,7 @@ struct VideoFrameExtractorTests {
     // MARK: - Tolerance behavior
 
     /// Verifies the tolerance wiring is actually applied and not just configured silently.
-    /// Wide tolerance should never be meaningfully slower than zero tolerance — in practice
+    /// Wide tolerance should never be meaningfully slower than zero tolerance - in practice
     /// it is faster when the video has sparse keyframes, since the generator can reuse
     /// already-decoded I-frames instead of seeking to exact positions.
     @Test("Wide tolerance is no slower than zero tolerance", .tags(.development, .slow))

@@ -16,7 +16,7 @@ public enum VideoTrackReader {
     /// AVFoundation can play the asset at all, sharing a single `AVURLAsset` across all three.
     ///
     /// `isPlayable` is a different question from whether either read succeeded. A container
-    /// AVFoundation cannot open — Matroska (`.mkv`) is the common one — yields `nil` for both
+    /// AVFoundation cannot open - Matroska (`.mkv`) is the common one - yields `nil` for both
     /// halves *and* `false` here, while an audio-only `.mov` yields a `nil` video track and
     /// `true`. Only the flag distinguishes "this file cannot be played" from "this file has no
     /// video track", and a caller showing a status icon needs the former.
@@ -47,7 +47,7 @@ public enum VideoTrackReader {
     ///
     /// Distinct from a path-extension test such as `AudioFileType.isVideo`, which resolves the
     /// extension's UTType and so reports an audio-only `.mp4`/`.mov` as video. Callers guarding a
-    /// destructive in-place operation need this instead — treating an audio-only container as
+    /// destructive in-place operation need this instead - treating an audio-only container as
     /// video needlessly refuses the operation, and the reverse discards a video track.
     ///
     /// Throws rather than returning `false` when the tracks can't be loaded, so a caller whose
@@ -208,7 +208,7 @@ public enum VideoTrackReader {
     }
 
     /// Normalizes an `AVAssetTrack.preferredTransform` rotation to the nearest multiple of
-    /// 90 degrees (0, 90, 180, or 270) — what a portrait phone-shot video needs applied to
+    /// 90 degrees (0, 90, 180, or 270) - what a portrait phone-shot video needs applied to
     /// preview right-side-up. Misreads a mirrored matrix; the reader asks
     /// `OrientationEdit(trackTransform:)` first and falls back to this only for one that scales.
     static func rotationDegrees(from transform: CGAffineTransform) -> Int {

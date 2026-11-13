@@ -8,7 +8,7 @@ public enum VideoEditError: Error {
     case outputExists(URL)
 
     /// The output URL's path extension names a container the export session cannot write.
-    /// MPEG-2 transport streams (`.ts`) are the common case — readable, but not writable.
+    /// MPEG-2 transport streams (`.ts`) are the common case - readable, but not writable.
     ///
     /// - Parameter alternatives: extensions this export *can* write, so the message can offer one
     ///   rather than only refusing. Read from the session itself, which is the only thing that
@@ -57,11 +57,11 @@ extension VideoEditError: LocalizedError {
         case let .unsupportedOutputContainer(pathExtension, alternatives):
             alternatives.isEmpty
                 ? "Video edits can't be written to .\(pathExtension) files"
-                : "Video edits can't be written to .\(pathExtension) files — try "
+                : "Video edits can't be written to .\(pathExtension) files - try "
                 + alternatives.map { ".\($0)" }.joined(separator: ", ")
 
         case let .trimOutOfRange(inPoint, outPoint, duration):
-            "Trim range \(inPoint)–\(outPoint)s is outside the file's \(duration)s duration"
+            "Trim range \(inPoint)-\(outPoint)s is outside the file's \(duration)s duration"
 
         case let .exportUnavailable(url):
             "Unable to prepare an export for \(url.lastPathComponent)"
@@ -73,13 +73,13 @@ extension VideoEditError: LocalizedError {
             "The render was cancelled"
 
         case let .tracksLost(url, missing):
-            "Rendering \(url.lastPathComponent) would have dropped its \(missing.joined(separator: " and ")) — the file was left unchanged"
+            "Rendering \(url.lastPathComponent) would have dropped its \(missing.joined(separator: " and ")) - the file was left unchanged"
 
         case let .tracksLostBySave(url, missing):
             "Saving \(url.lastPathComponent) removed its \(missing.joined(separator: " and "))"
 
         case let .orientationNotWritten(url):
-            "Rendering \(url.lastPathComponent) did not keep its rotation or flip — the file was left unchanged"
+            "Rendering \(url.lastPathComponent) did not keep its rotation or flip - the file was left unchanged"
         }
     }
 }

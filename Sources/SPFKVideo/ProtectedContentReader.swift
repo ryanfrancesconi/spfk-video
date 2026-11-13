@@ -6,7 +6,7 @@ import Foundation
 /// Whether a container's content is DRM-protected (FairPlay), asked of the asset alone.
 ///
 /// The question a protected purchase makes necessary: it opens, reports playable, decodes its
-/// metadata, and fails only once a player or a file reader holds it — so nothing short of asking
+/// metadata, and fails only once a player or a file reader holds it - so nothing short of asking
 /// keeps it out of one. ``VideoTrackReader/read(from:)`` folds the same answer into its result for
 /// the files it reads; this is for the audio containers of the same family it does not.
 public enum ProtectedContentReader {

@@ -5,8 +5,8 @@ import Foundation
 /// One selectable audio track of a video file, in terms neither playback backend owns.
 ///
 /// A dual-audio film states two, and which one plays is the user's choice rather than the muxer's
-/// ordering. The two backends answer that question by unrelated mechanisms — Matroska reopens its
-/// demuxer on a different `TrackNumber`, AVFoundation enables a track on a live player item — so
+/// ordering. The two backends answer that question by unrelated mechanisms - Matroska reopens its
+/// demuxer on a different `TrackNumber`, AVFoundation enables a track on a live player item - so
 /// nothing here mentions reopening, seeking, or a track number. A backend answers "which tracks"
 /// and "use this one", and maps ``id`` back to its own object.
 ///
@@ -16,7 +16,7 @@ public struct AudioTrackDescription: Hashable, Sendable, Codable, Identifiable {
     /// A track's identity, stable across reopens of the same file.
     ///
     /// Matroska fills it from `TrackUID` and AVFoundation from `CMPersistentTrackID`, both of which
-    /// survive in the file. **Not a track number or an index** — those are positional, and a remux
+    /// survive in the file. **Not a track number or an index** - those are positional, and a remux
     /// renumbers them, which is exactly what a persisted selection must not depend on. The wrapper
     /// exists to make that confusion a compile error rather than a wrong track.
     public struct ID: Hashable, Sendable, Codable, RawRepresentable {
@@ -34,7 +34,7 @@ public struct AudioTrackDescription: Hashable, Sendable, Codable, Identifiable {
 
     public let id: ID
 
-    /// The container's own name for the track, when it states one — Matroska's `Name`, QuickTime's
+    /// The container's own name for the track, when it states one - Matroska's `Name`, QuickTime's
     /// `udta/name`.
     public let name: String?
 
@@ -42,7 +42,7 @@ public struct AudioTrackDescription: Hashable, Sendable, Codable, Identifiable {
     /// QuickTime ISO-639-2. Resolving it to a display language is ``displayName``'s job.
     public let language: String?
 
-    /// A codec name for the picker's benefit, not for dispatch — `A_AAC`, `aac`, whatever the
+    /// A codec name for the picker's benefit, not for dispatch - `A_AAC`, `aac`, whatever the
     /// backend calls it.
     public let codec: String?
 
@@ -50,8 +50,8 @@ public struct AudioTrackDescription: Hashable, Sendable, Codable, Identifiable {
     public let sampleRate: Double?
 
     /// **No default-track flag, deliberately.** Matroska's `FlagDefault` is one libwebm's parser
-    /// discards — `kMkvFlagDefault` is in its ID table and nothing reads it, so there is no
-    /// accessor to bridge — and QuickTime's per-track enabled bit answers a different question.
+    /// discards - `kMkvFlagDefault` is in its ID table and nothing reads it, so there is no
+    /// accessor to bridge - and QuickTime's per-track enabled bit answers a different question.
     /// A field one backend can only ever answer `false` to is worse than an absent one, and
     /// nothing needs it: initial selection is the first track either way.
     public init(
@@ -76,7 +76,7 @@ public struct AudioTrackDescription: Hashable, Sendable, Codable, Identifiable {
 extension AudioTrackDescription {
     /// A label for a picker, which always has one.
     ///
-    /// **Name and language together when both exist** — `Ingrisi KoTuWa - [English]` — following
+    /// **Name and language together when both exist** - `Ingrisi KoTuWa - [English]` - following
     /// VLC, which is what users of dual-audio files already read. Choosing one loses something
     /// either way: a name says what a language code cannot ("Director's Commentary" is `eng` too),
     /// while two tracks a muxer named in their own language are indistinguishable without it.
@@ -85,7 +85,7 @@ extension AudioTrackDescription {
     public var displayName: String {
         switch (trimmedName, localizedLanguage) {
         case let (name?, language?):
-            // Naming a track after its own language is the common case by far — VLC's example
+            // Naming a track after its own language is the common case by far - VLC's example
             // reads well only because "Ingrisi KoTuWa" is exotic. Appending the language to a name
             // that already is the language gives "English - [English]".
             name.caseInsensitiveCompare(language) == .orderedSame
@@ -103,7 +103,7 @@ extension AudioTrackDescription {
         }
     }
 
-    /// ``name`` with empty treated as absent — a muxer writes `""` for "no name", and a blank label
+    /// ``name`` with empty treated as absent - a muxer writes `""` for "no name", and a blank label
     /// must not win the chain.
     private var trimmedName: String? {
         guard let name, name.isEmpty == false else { return nil }
@@ -121,7 +121,7 @@ extension AudioTrackDescription {
     /// `Locale` cannot resolve.
     ///
     /// `und` is refused: it resolves to a real string ("Unknown language"), which is worse than
-    /// falling through to the codec. It means a muxer said *undetermined* rather than said nothing —
+    /// falling through to the codec. It means a muxer said *undetermined* rather than said nothing -
     /// ffmpeg writes it explicitly where an absent element means English (`spfk-matroska` applies
     /// that default), so the two are different answers and only this one is an absence.
     public var localizedLanguage: String? {

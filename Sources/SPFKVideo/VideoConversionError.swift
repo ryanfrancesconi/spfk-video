@@ -47,7 +47,7 @@ public enum VideoConversionError: LocalizedError {
         case let .unsupportedContainer(container, preset, alternatives):
             alternatives.isEmpty
                 ? "\(preset.title) can't be written to .\(container.pathExtension)."
-                : "\(preset.title) can't be written to .\(container.pathExtension) — try "
+                : "\(preset.title) can't be written to .\(container.pathExtension) - try "
                 + alternatives.map { ".\($0)" }.joined(separator: ", ")
 
         case let .exportFailed(_, underlying):

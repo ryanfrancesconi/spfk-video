@@ -3,7 +3,7 @@ import Foundation
 import SPFKBase
 import Testing
 
-/// Pure-function unit tests for the helpers behind `VideoTrackReader.read(from:)` — no video
+/// Pure-function unit tests for the helpers behind `VideoTrackReader.read(from:)` - no video
 /// fixture needed, since these don't touch AVFoundation at all.
 @Suite
 struct VideoTrackReaderTests {

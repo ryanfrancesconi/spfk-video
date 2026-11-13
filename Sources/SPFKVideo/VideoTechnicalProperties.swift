@@ -9,7 +9,7 @@ import SwiftTimecode
 /// localized display strings keyed by ``Key``. The GPS coordinate is additionally kept as raw
 /// values (``latitude``/``longitude``) for consumers that need to do more than print it.
 ///
-/// This is the presentation-ready data model only — it has no view-layer dependency.
+/// This is the presentation-ready data model only - it has no view-layer dependency.
 /// Consumers that wire these fields into an AppKit UI (row insertion, GPS map-pin buttons,
 /// etc.) do so via their own extension of this type, e.g. `spfk-shadowtag-ui`'s
 /// `VideoTechnicalProperties+PropertiesGroupView.swift`.
@@ -32,7 +32,7 @@ public struct VideoTechnicalProperties: Sendable, Hashable {
         case captureDate = "Capture Date"
 
         /// - Note: a per-case `switch` with literal `localized(...)` calls, not
-        /// `NSLocalizedString(rawValue, ...)` — Xcode's string-catalog extraction only
+        /// `NSLocalizedString(rawValue, ...)` - Xcode's string-catalog extraction only
         /// picks up literal arguments at the call site, not a value resolved through an
         /// enum's `rawValue` at runtime.
         public var displayName: String {
@@ -77,7 +77,7 @@ public struct VideoTechnicalProperties: Sendable, Hashable {
 
     /// A duration as SMPTE timecode, which is how an edit is actually specified.
     ///
-    /// Always timecode, never fractional seconds — the column is a timecode column, and a row
+    /// Always timecode, never fractional seconds - the column is a timecode column, and a row
     /// reading `7675.70 s` beside rows reading `02:07:55:03` is a different unit wearing the same
     /// heading. A duration that cannot be expressed at a known rate reads as a zero timecode
     /// instead. `nil`, leaving the row blank, only when there is no duration at all.
@@ -104,12 +104,12 @@ public struct VideoTechnicalProperties: Sendable, Hashable {
             if let frameRate = videoTrack.timecodeFrameRate {
                 dictionary[.frameRate] = frameRate.stringValueVerbose
             }
-            // The `tmcd` track's own value, and only that — this type reports what the video
+            // The `tmcd` track's own value, and only that - this type reports what the video
             // stream states. A file's *effective* start can come from XMP, `bext` or an INFO tag
             // instead, which is `MetaAudioFileDescription.resolvedStartTimecode`'s job; wiring that
             // in here would put a value the stream never carried under a stream-technical heading.
             // Blank rather than a zero timecode when absent, since a container with no timecode
-            // track states no start at all — unlike a duration, which exists either way.
+            // track states no start at all - unlike a duration, which exists either way.
             dictionary[.startTimecode] = videoTrack.startTimecode?.stringValue()
             dictionary[.duration] = Self.durationString(
                 seconds: videoTrack.duration,
@@ -117,7 +117,7 @@ public struct VideoTechnicalProperties: Sendable, Hashable {
             )
             dictionary[.codec] = videoTrack.codec
             // nil means the container has no explicit PixelAspectRatio extension, which
-            // implies 1:1 square pixels (the common case) rather than "unknown" — display
+            // implies 1:1 square pixels (the common case) rather than "unknown" - display
             // that default rather than leaving the row blank.
             dictionary[.pixelAspectRatio] = String(format: "%.3f", videoTrack.pixelAspectRatio ?? 1.0)
             if let rotationDegrees = videoTrack.rotationDegrees {
@@ -143,7 +143,7 @@ public struct VideoTechnicalProperties: Sendable, Hashable {
     }
 }
 
-/// Matches `SPFKUtils`' `Date.mediumString` style (medium date, short time, current locale) —
+/// Matches `SPFKUtils`' `Date.mediumString` style (medium date, short time, current locale) -
 /// duplicated here rather than depending on `SPFKUtils`, which would pull in `spfk-audio-base`,
 /// `spfk-filesystem`, and other unrelated packages transitively for a single formatter.
 private let captureDateFormatter: DateFormatter = {

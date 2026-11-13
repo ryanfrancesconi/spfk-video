@@ -4,11 +4,11 @@ import Foundation
 import SwiftTimecode
 
 /// Video stream technical properties (resolution, frame rate, codec, pixel aspect ratio,
-/// rotation), read via AVFoundation (`AVAssetTrack`) rather than TagLib — these are
+/// rotation), read via AVFoundation (`AVAssetTrack`) rather than TagLib - these are
 /// stream-technical facts, not tags. `nil` for pure-audio files.
 public struct VideoTrackProperties: Hashable, Sendable, Codable {
     /// Current schema version `VideoTrackReader` populates. Bump this whenever a video-track read
-    /// starts populating something it didn't before — a field on this type, or one of the sibling
+    /// starts populating something it didn't before - a field on this type, or one of the sibling
     /// flags the same `loadVideoTrack()` call writes. `parserVersion < currentParserVersion` (see
     /// `isOutdated`) then reliably flags a value that was cached under an older reader and needs
     /// re-deriving from the source file -- unlike checking individual fields' nil-ness, which can't
@@ -22,10 +22,10 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
     /// that found none, and re-reads the rows whose stamp is behind this.
     ///
     /// 2: `duration` added, which anything cached under version 1 is missing.
-    /// 3: nothing new on this type. `isDecodable` — whether the Matroska demuxer can decode a
-    ///    container AVFoundation will not open — was never set on the import path, so every
+    /// 3: nothing new on this type. `isDecodable` - whether the Matroska demuxer can decode a
+    ///    container AVFoundation will not open - was never set on the import path, so every
     ///    Matroska element cached before this reads as unplayable however well it plays.
-    /// 4: `startTimecodeString` added — the `tmcd` track's start value, which the reader
+    /// 4: `startTimecodeString` added - the `tmcd` track's start value, which the reader
     ///    previously discarded while keeping only the frame rate it resolved alongside.
     /// 5: nothing new on this type. `hasProtectedContent` is read alongside and recorded as the
     ///    description's `isProtected`, so a FairPlay purchase cached under version 4 reads as
@@ -69,7 +69,7 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
 
     /// Duration of the video track in seconds.
     ///
-    /// The *track's* duration, not the container's — they differ when a sibling audio track runs
+    /// The *track's* duration, not the container's - they differ when a sibling audio track runs
     /// longer, which is common in phone video.
     public var duration: TimeInterval?
 
@@ -78,13 +78,13 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
     ///
     /// Stored as its string form because `Timecode` is not `Codable` and this value is cached
     /// alongside the rest of this type. The frame separator carries the drop flag, so the string
-    /// is lossless where a bare frame count would not be — see ``startTimecode``.
+    /// is lossless where a bare frame count would not be - see ``startTimecode``.
     public var startTimecodeString: String?
 
     /// ``startTimecodeString`` parsed at ``timecodeFrameRate``.
     ///
     /// `nil` when either is absent, or when the stored string does not express a valid position at
-    /// that rate — a mismatch that means the two were read from files with different rates, not
+    /// that rate - a mismatch that means the two were read from files with different rates, not
     /// something to render approximately.
     public var startTimecode: Timecode? {
         guard let startTimecodeString, let timecodeFrameRate else { return nil }
@@ -102,7 +102,7 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
     /// derived from `AVAssetTrack.formatDescriptions`.
     public var codec: String?
 
-    /// Pixel aspect ratio (width/height of a single pixel — 1.0 for square pixels).
+    /// Pixel aspect ratio (width/height of a single pixel - 1.0 for square pixels).
     public var pixelAspectRatio: Double?
 
     /// Rotation baked into `AVAssetTrack.preferredTransform`, normalized to the nearest
@@ -125,7 +125,7 @@ public struct VideoTrackProperties: Hashable, Sendable, Codable {
     /// seconds is a display failure rather than an honest absence.
     ///
     /// **Drop-frame is excluded from the fallback only.** `asset.timecodeFrameRate()` detects it, so
-    /// ``preciseFrameRate`` can be a drop rate and is returned as-is — which is what a *position*
+    /// ``preciseFrameRate`` can be a drop rate and is returned as-is - which is what a *position*
     /// readout wants, since drop-frame is how positions are numbered. The fallback cannot know:
     /// `nominalFrameRate` is a bare fps and a container stating one carries no timecode track to
     /// read drop from, so guessing would mislabel every 29.97 file one way or the other.

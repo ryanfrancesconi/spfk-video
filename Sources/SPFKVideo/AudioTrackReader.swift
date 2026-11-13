@@ -9,7 +9,7 @@ import SPFKBase
 ///
 /// The counterpart to the Matroska demuxer's own listing, producing the same neutral type so a
 /// picker is written once. Returns an empty array rather than throwing for a container
-/// AVFoundation cannot open — that file has a different backend, and a listing that failed and one
+/// AVFoundation cannot open - that file has a different backend, and a listing that failed and one
 /// that found nothing lead to the same place: no choice to offer.
 public enum AudioTrackReader {
     /// Every audio track of the asset at `url`, in stored order.
@@ -52,7 +52,7 @@ public enum AudioTrackReader {
         var sampleRate: Double?
 
         if let description = formatDescriptions.first {
-            // A four-character code pads to four with spaces, so AAC arrives as `"aac "` — trailing
+            // A four-character code pads to four with spaces, so AAC arrives as `"aac "` - trailing
             // whitespace in a value that reaches a menu row. Video subtypes happen to fill all four
             // (`avc1`, `hvc1`), which is why `fourCCString` itself does not do this.
             codec = VideoTrackReader.fourCCString(CMFormatDescriptionGetMediaSubType(description))?

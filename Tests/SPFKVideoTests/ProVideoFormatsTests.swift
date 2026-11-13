@@ -56,7 +56,7 @@ struct ProVideoFormatsTests {
 
     /// Meaningful in both directions, so it runs unconditionally: a container the plug-ins do not
     /// serve must never produce the prompt, whether or not they are installed. Matroska is the
-    /// trap — also unreadable by `AVAudioFile`, and nothing Apple ships would fix it.
+    /// trap - also unreadable by `AVAudioFile`, and nothing Apple ships would fix it.
     @Test("Never prompts for a container the plug-ins do not serve")
     func doesNotPromptForOtherContainers() {
         #expect(ProVideoFormats.needsInstall(for: URL(fileURLWithPath: "/tmp/a.mov")) == false)

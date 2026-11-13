@@ -36,7 +36,7 @@ final class PassthroughMetadataProbeTests {
         #expect(after.longitude == before.longitude)
     }
 
-    /// The trim itself is exact on both ends — the export writes an edit list rather than cutting
+    /// The trim itself is exact on both ends - the export writes an edit list rather than cutting
     /// the media at a keyframe, which is why no keyframe snapping is needed in the editor.
     @Test func passthroughTrimReportsTheRequestedDuration() async throws {
         let source = try await Self.makeTaggedVideo()

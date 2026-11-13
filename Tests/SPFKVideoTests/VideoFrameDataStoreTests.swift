@@ -172,12 +172,12 @@ final class VideoFrameDataStoreTests: BinTestCase {
     /// after a swallowed `try?` on `removeItem`, so a failed removal (permissions, file in
     /// use) was misreported as successful.
     ///
-    /// Locks the per-video subdirectory itself (not the store's root) — POSIX requires
+    /// Locks the per-video subdirectory itself (not the store's root) - POSIX requires
     /// write access on the *containing* directory to remove an entry, so this blocks
     /// removal of everything inside it. Locking only the store's root instead would let
     /// `removeItem`'s recursive descent delete the inner file first (its own parent, the
     /// per-video subdirectory, would still permit that) and only fail on the now-empty
-    /// subdirectory itself — a real, first-draft mistake caught by this exact test run,
+    /// subdirectory itself - a real, first-draft mistake caught by this exact test run,
     /// where the "file still exists" assertion below failed even though the count
     /// assertion correctly passed.
     @Test func pruneDoesNotCountFailedRemovalsAsSuccessful() async throws {

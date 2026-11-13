@@ -45,7 +45,7 @@ final class FrameSeekFilterTests {
         #expect(filter.allows(1.0, fps: fps))
     }
 
-    /// An unknown rate has to fail open — a dropped seek is a picture that never moves.
+    /// An unknown rate has to fail open - a dropped seek is a picture that never moves.
     @Test func anAbsentRateAllowsEverything() {
         let filter = FrameSeekFilter()
 

@@ -6,14 +6,14 @@ import Foundation
 /// Collapses seek requests that arrive faster than `AVPlayer` can serve them.
 ///
 /// A drag emits one seek per mouse-move. Issued directly, each one cancels the one still in flight,
-/// so the picture can starve — no seek survives long enough to deliver a frame. Performing the
+/// so the picture can starve - no seek survives long enough to deliver a frame. Performing the
 /// first and the newest, and dropping what fell between, lands on the position last asked for.
 ///
 /// Shared rather than written per player owner: both surfaces that drive an `AVPlayer` here need it,
 /// and a second copy would be a second set of in-flight bookkeeping to get wrong.
 @MainActor
 public final class AVPlayerSeekCoalescer {
-    /// Called when the playhead settles — after a seek that nothing superseded. Intermediate
+    /// Called when the playhead settles - after a seek that nothing superseded. Intermediate
     /// positions do not report: a playhead seed rebuilt against one is stale before it is used.
     public var onSettled: (() -> Void)?
 
@@ -36,7 +36,7 @@ public final class AVPlayerSeekCoalescer {
         perform(player, time: time, tolerance: tolerance)
     }
 
-    /// Drops anything in flight or waiting. For an owner replacing or clearing its item — a pending
+    /// Drops anything in flight or waiting. For an owner replacing or clearing its item - a pending
     /// seek names a position in a file that is going away.
     public func cancelPending() {
         isSeekInFlight = false

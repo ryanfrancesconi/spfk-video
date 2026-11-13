@@ -14,7 +14,7 @@ final class VideoEditRendererTests {
 
     /// **A render that lost the audio must not be handed back.** A passthrough export writes what
     /// the destination container accepts and reports success either way, and the caller replaces
-    /// the user's original with the result — so a dropped track is permanent, silent data loss.
+    /// the user's original with the result - so a dropped track is permanent, silent data loss.
     @Test func aDroppedAudioTrackIsDetected() {
         let missing = VideoEditRenderer.missingEssentialTracks(
             source: [.video, .audio, .timecode],
@@ -44,7 +44,7 @@ final class VideoEditRendererTests {
         #expect(missing == [.audio])
     }
 
-    /// Timecode, telemetry and text tracks are dropped by every passthrough export — a GoPro's
+    /// Timecode, telemetry and text tracks are dropped by every passthrough export - a GoPro's
     /// `tmcd` and `gpmd` do not survive one. Refusing those renders would block ordinary edits to
     /// protect data the container was never going to keep.
     @Test func droppingNonEssentialTracksIsAllowed() {
@@ -88,7 +88,7 @@ final class VideoEditRendererTests {
         defer { try? FileManager.default.removeItem(at: source) }
 
         // An audio-only container cannot carry the video track, so the export drops it and still
-        // reports success — the same shape as a container that cannot carry the audio.
+        // reports success - the same shape as a container that cannot carry the audio.
         let output = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString)
             .appendingPathExtension("m4a")
@@ -148,7 +148,7 @@ final class VideoEditRendererTests {
 
     /// The property the whole design rests on: passthrough is frame-accurate on the in-point, so
     /// the first frame of the output is the source's frame at that time and not the preceding
-    /// keyframe. Zero tolerance on both extractions — the default wide tolerance would let a
+    /// keyframe. Zero tolerance on both extractions - the default wide tolerance would let a
     /// neighbouring frame satisfy this and hide exactly the drift being tested for.
     @Test func trimsToTheExactRequestedFrame() async throws {
         let source = try await Self.videoWithAudio(duration: 8)
@@ -298,7 +298,7 @@ final class VideoEditRendererTests {
         #expect(!output.exists)
     }
 
-    /// An out-point past the end is clamped rather than refused — a trim stored against a
+    /// An out-point past the end is clamped rather than refused - a trim stored against a
     /// slightly different duration is a rounding artifact, not a mistake.
     @Test(arguments: Self.assetPaths)
     func clampsAnOutPointPastTheEndOfTheSource(orientation: OrientationEdit) async throws {
@@ -315,8 +315,8 @@ final class VideoEditRendererTests {
     // MARK: - Export paths
 
     /// Both export paths must produce the same result. `#available(macOS 15, *)` is true on every
-    /// current development and CI machine, so without forcing it the pre-15 branch — the one
-    /// macOS 13/14 users actually run — would never execute anywhere before shipping.
+    /// current development and CI machine, so without forcing it the pre-15 branch - the one
+    /// macOS 13/14 users actually run - would never execute anywhere before shipping.
     @Test(arguments: [false, true], Self.assetPaths)
     func bothExportPathsProduceTheSameTrim(usesLegacyExportPath: Bool, orientation: OrientationEdit) async throws {
         let source = try await Self.videoWithAudio(duration: 8)

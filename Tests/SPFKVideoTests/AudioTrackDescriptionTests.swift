@@ -28,7 +28,7 @@ struct AudioTrackDescriptionTests {
     }
 
     /// A track named after its own language is the common case, and appending the language to it
-    /// reads as a stutter — the fixtures are exactly this shape.
+    /// reads as a stutter - the fixtures are exactly this shape.
     @Test func doesNotRepeatALanguageThatIsAlreadyTheName() {
         #expect(description(name: "English", language: "eng").displayName == "English")
         #expect(description(name: "english", language: "eng").displayName == "english")
@@ -55,7 +55,7 @@ struct AudioTrackDescriptionTests {
     }
 
     /// Matroska's default when a muxer states nothing. `Locale` resolves it to a real string, which
-    /// would win the chain and label every unlabeled track identically — the codec is more use.
+    /// would win the chain and label every unlabeled track identically - the codec is more use.
     @Test func refusesUndeterminedAsALanguage() {
         let track = description(language: "und", codec: "A_AAC")
 

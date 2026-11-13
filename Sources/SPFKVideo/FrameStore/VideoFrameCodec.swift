@@ -20,7 +20,7 @@ enum VideoFrameCodec {
             throw VideoFrameDataStoreError.encodingFailed
         }
 
-        // ImageIO's default JPEG quality is unstated/undocumented when omitted — set an
+        // ImageIO's default JPEG quality is unstated/undocumented when omitted - set an
         // explicit value so cached frame quality is a known, deliberate choice rather than
         // whatever the platform happens to default to.
         let properties: [CFString: Any] = [kCGImageDestinationLossyCompressionQuality: 0.8]

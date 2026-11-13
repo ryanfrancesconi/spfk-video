@@ -6,7 +6,7 @@ import Testing
 
 @testable import SPFKVideo
 
-/// Pure data-formatting tests for `VideoTechnicalProperties` — no video fixture needed,
+/// Pure data-formatting tests for `VideoTechnicalProperties` - no video fixture needed,
 /// since population is driven entirely by synthetic `VideoTrackProperties`/
 /// `QuickTimeUserData` structs, not file I/O.
 @Suite
@@ -31,7 +31,7 @@ struct VideoTechnicalPropertiesTests {
         let properties = VideoTechnicalProperties(videoTrack: videoTrack, quickTimeUserData: nil)
 
         // dictionary[key] is String?? (every key is present with an explicit String?
-        // value) — flatten with `?? nil` before comparing, or `== nil` checks "key
+        // value) - flatten with `?? nil` before comparing, or `== nil` checks "key
         // missing" (never true here) instead of "value is nil".
         #expect((properties.dictionary[.resolution] ?? nil) == nil)
     }
@@ -47,7 +47,7 @@ struct VideoTechnicalPropertiesTests {
     }
 
     /// Unlike a duration, which exists whether or not it can be expressed at a known rate, a
-    /// container with no timecode track states no start at all — so the row is blank rather than
+    /// container with no timecode track states no start at all - so the row is blank rather than
     /// falling back to a zero timecode the file never claimed.
     @Test func startTimecodeStaysNilWithoutATimecodeTrack() {
         let videoTrack = VideoTrackProperties(nominalFrameRate: 29.97, duration: 120)
@@ -65,7 +65,7 @@ struct VideoTechnicalPropertiesTests {
     }
 
     /// A container with no explicit PixelAspectRatio extension implies 1:1 square pixels
-    /// (the common case), not "unknown" — the row should show "1.000", not be blank.
+    /// (the common case), not "unknown" - the row should show "1.000", not be blank.
     @Test func pixelAspectRatioDefaultsToOneWhenNil() {
         let videoTrack = VideoTrackProperties(pixelAspectRatio: nil)
         let properties = VideoTechnicalProperties(videoTrack: videoTrack, quickTimeUserData: nil)

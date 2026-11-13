@@ -18,7 +18,7 @@ final class VideoTrackPresenceTests {
         #expect(try await VideoTrackReader.hasVideoTrack(url: url))
     }
 
-    /// An audio-only `.mp4` — the case that makes this distinct from an extension check, which
+    /// An audio-only `.mp4` - the case that makes this distinct from an extension check, which
     /// resolves `mp4` to a movie UTType and would report it as video.
     @Test func reportsNoVideoTrackForAudioOnlyMP4() async throws {
         let url = TestBundleResources.shared.tabla_mp4

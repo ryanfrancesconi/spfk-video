@@ -10,7 +10,7 @@ import Foundation
 /// the UI a stable list with stable labels.
 /// Raw value is `Float` to match `AVPlayer.rate` and `playImmediately(atRate:)`, which are the only
 /// things a speed is ever handed to. (The `Double` on `PlaybackAnimation.rate` is a different
-/// quantity — a `Float64` *measured* off the timebase, not a selected one.)
+/// quantity - a `Float64` *measured* off the timebase, not a selected one.)
 public enum PlaybackSpeed: Float, CaseIterable, Sendable {
     case quarter = 0.25
     case half = 0.5

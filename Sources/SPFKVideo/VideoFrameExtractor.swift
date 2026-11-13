@@ -8,7 +8,7 @@ import SPFKBase
 /// Extracts still frames from a video asset at given timestamps.
 ///
 /// Wide tolerance by default, so the generator takes the nearest decoded frame instead of forcing
-/// an exact decode — much faster, and thumbnails do not need frame accuracy.
+/// an exact decode - much faster, and thumbnails do not need frame accuracy.
 ///
 /// Keyed by the *requested* timestamp rather than the extracted one, so an evenly spaced request
 /// comes back evenly spaced however wide the tolerance.
@@ -22,8 +22,8 @@ public enum VideoFrameExtractor {
     /// Where in a video the poster frame is taken from: **the midpoint, uncapped.**
     ///
     /// Uncapped because seeking deep costs nothing: at ``defaultTolerance``, 90% into a 211s H.264
-    /// clip took 16 ms against 23 ms at 2%, and a 4K HEVC clip was 52–58 ms at every position.
-    /// A cap costs correctness instead — of 400 clips measured, 348 ran 4 to 60 seconds and a 2.0s
+    /// clip took 16 ms against 23 ms at 2%, and a 4K HEVC clip was 52-58 ms at every position.
+    /// A cap costs correctness instead - of 400 clips measured, 348 ran 4 to 60 seconds and a 2.0s
     /// cap posted every one of them at 2.0s, while a feature returned its distributor's logo card.
     ///
     /// **Any poster-frame path must call this**, whatever extracts the picture, or thumbnails
@@ -38,7 +38,7 @@ public enum VideoFrameExtractor {
     ///
     /// Container formats routinely have audio and video tracks of slightly different
     /// lengths (e.g. a DaVinci Resolve export where the audio track outlasts the video
-    /// track by ~80ms) — `AVAsset.load(.duration)` reflects the container's overall
+    /// track by ~80ms) - `AVAsset.load(.duration)` reflects the container's overall
     /// duration, which is not guaranteed to match the video track specifically. Callers
     /// that sample timestamps for frame extraction should use this instead of a
     /// separately-sourced (e.g. audio-track) duration to avoid requesting frames past the
@@ -85,7 +85,7 @@ public enum VideoFrameExtractor {
     ///     the nearest already-decoded frame for better throughput. Defaults to
     ///     ``defaultTolerance``.
     /// - Returns: Images keyed by the requested timestamp. A timestamp whose frame fails to
-    ///   extract (logged, not thrown) is simply absent from the result — one bad frame doesn't
+    ///   extract (logged, not thrown) is simply absent from the result - one bad frame doesn't
     ///   discard the rest of the batch.
     /// - Throws: ``VideoFrameExtractionError/assetNotPlayable(_:)`` if the asset itself is not
     ///   playable (missing, corrupt, or unsupported format), or has no usable video track.
@@ -117,7 +117,7 @@ public enum VideoFrameExtractor {
 
         // A timestamp at or beyond the video track's own duration (e.g. sampled against a
         // sibling audio track whose duration doesn't exactly match) fails extraction outright
-        // ("Cannot Open") rather than clamping to the nearest valid frame — drop it before ever
+        // ("Cannot Open") rather than clamping to the nearest valid frame - drop it before ever
         // making the request instead of relying on the per-frame failure handling below.
         let validTimestamps = timestamps.filter {
             CMTimeCompare(CMTime(seconds: $0, preferredTimescale: 600), duration) < 0
@@ -149,7 +149,7 @@ public enum VideoFrameExtractor {
 
             case let .failure(requestedTime, error):
                 // One unreadable frame (e.g. a corrupt GOP, a decoder resource conflict) shouldn't
-                // discard every other frame in the batch — skip it and keep collecting the rest.
+                // discard every other frame in the batch - skip it and keep collecting the rest.
                 let timestamp = cmTimeToTimestamp[requestedTime] ?? requestedTime.seconds
                 Log.error("Failed to extract video frame at \(timestamp)s from \(url.lastPathComponent)", error)
             }

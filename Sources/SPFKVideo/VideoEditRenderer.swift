@@ -10,15 +10,15 @@ import UniformTypeIdentifiers
 ///
 /// Uses `AVAssetExportPresetPassthrough`, so the media is remuxed rather than re-encoded: every
 /// track is copied bit-for-bit and the export costs milliseconds rather than minutes. Trimming is
-/// still exact on both ends — the export retains the partial leading GOP and writes an edit list
+/// still exact on both ends - the export retains the partial leading GOP and writes an edit list
 /// that starts presentation at the requested time, so the first presented frame is the frame at
 /// the in-point even when the preceding keyframe is more than a second earlier. Measured against a
 /// 23.976 long-GOP source with keyframes ~1.25 s apart. **This is why the editor must not snap trim
-/// handles to keyframes** — there is no drift to compensate for, and snapping would move the
+/// handles to keyframes** - there is no drift to compensate for, and snapping would move the
 /// user's in-point for nothing.
 ///
 /// The one cost of that mechanism is that up to one extra GOP of leading video stays in the file.
-/// Anything honoring edit lists — all of AVFoundation, and ffmpeg by default — sees the exact
+/// Anything honoring edit lists - all of AVFoundation, and ffmpeg by default - sees the exact
 /// trim; a tool that ignores them sees the lead-in. That is inherent to lossless trimming.
 ///
 /// Metadata needs no special handling: a passthrough export preserves the iTunes, QuickTime
@@ -28,7 +28,7 @@ import UniformTypeIdentifiers
 ///
 /// An orientation is written as each video track's matrix, so it re-encodes nothing either. A render
 /// with no orientation reads the source as an `AVURLAsset`, and one with an orientation as an
-/// `AVMutableMovie` — never a composition, which drops the asset's metadata.
+/// `AVMutableMovie` - never a composition, which drops the asset's metadata.
 ///
 /// Takes a ``TrimDescription`` rather than an audio edit type on purpose: this package must stay
 /// free of any audio dependency so TorchTag can reach it too.
@@ -142,7 +142,7 @@ public actor VideoEditRenderer {
         return outputURL
     }
 
-    /// Tests only — see ``usesLegacyExportPath``.
+    /// Tests only - see ``usesLegacyExportPath``.
     func setUsesLegacyExportPath(_ value: Bool) {
         usesLegacyExportPath = value
     }
@@ -200,7 +200,7 @@ public actor VideoEditRenderer {
     /// Which of audio and video came out with fewer tracks than went in.
     ///
     /// Only those two are checked. Timecode, metadata and text tracks are routinely dropped by a
-    /// passthrough export — a GoPro's `tmcd` and `gpmd` do not survive one — and refusing those
+    /// passthrough export - a GoPro's `tmcd` and `gpmd` do not survive one - and refusing those
     /// renders would block ordinary edits to protect data the container was never going to keep.
     public static func missingEssentialTracks(
         source: [AVMediaType],
@@ -215,12 +215,12 @@ public actor VideoEditRenderer {
     ///
     /// Runs before the session exists, so it has no alternatives to offer -- that answer belongs
     /// to the session.
-    /// Whether AVFoundation can *write* this container — and so whether a trim of it can be applied
+    /// Whether AVFoundation can *write* this container - and so whether a trim of it can be applied
     /// at all.
     ///
     /// Reading and writing are different capabilities here, and MXF is the case that separates
     /// them: the Pro Video Formats readers make it readable, while
-    /// `AVAssetExportSession.supportedFileTypes` still excludes `org.smpte.mxf` — measured
+    /// `AVAssetExportSession.supportedFileTypes` still excludes `org.smpte.mxf` - measured
     /// 2026-09-08 on both a Resolve OP-Atom export and an Adobe OP1a file. A trim writes back to
     /// the source's own extension, so offering one would fail at
     /// ``VideoEditError/unsupportedOutputContainer(_:alternatives:)`` after the user had made the

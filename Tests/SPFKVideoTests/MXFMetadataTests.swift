@@ -32,7 +32,7 @@ struct MXFMetadataTests {
 
     /// **`AVMetadataItem.dateValue` fabricates a date for these items rather than declining them.**
     /// They arrive as `com.apple.metadata.datatype.UTF-8`, and the real value below came back from
-    /// `dateValue` as `12198-05-07` — which reached the panel as "May 7, 12198". Parsing the string
+    /// `dateValue` as `12198-05-07` - which reached the panel as "May 7, 12198". Parsing the string
     /// is what makes it right, so this pins the parse.
     @Test("Parses a keyspace timestamp without inventing one")
     func parsesTimestamp() throws {
