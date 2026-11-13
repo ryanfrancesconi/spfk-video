@@ -186,8 +186,10 @@ public final class VideoTransport {
         player.currentItem?.status == .readyToPlay
     }
 
+    /// A pause the player makes on its own drops `rate` first and may post no `timeControlStatus`
+    /// change after it, so both are read.
     public var isPlaying: Bool {
-        player.timeControlStatus != .paused
+        player.rate != 0 && player.timeControlStatus != .paused
     }
 
     /// Seconds, or zero when nothing is loaded. An unloaded transport reporting zero rather than
