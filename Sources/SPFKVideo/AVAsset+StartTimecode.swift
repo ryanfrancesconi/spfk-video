@@ -3,6 +3,7 @@
 import AVFoundation
 import CoreMedia
 import Foundation
+import SPFKBase
 import SwiftTimecode
 
 extension AVAsset {
@@ -20,20 +21,12 @@ extension AVAsset {
         for track in try await loadTracks(withMediaType: .timecode) {
             nonisolated(unsafe) let track = track
 
-            if let sample = try await Self.onOwnThread({ try TimecodeSample.first(in: track, of: asset) }) {
+            if let sample = try await BlockingCallAdmission.ownThread.admit({ try TimecodeSample.first(in: track, of: asset) }) {
                 return try sample.timecode(at: rate)
             }
         }
 
         return nil
-    }
-
-    private static func onOwnThread<T: Sendable>(_ body: @escaping @Sendable () throws -> T) async throws -> T {
-        try await withCheckedThrowingContinuation { continuation in
-            Thread.detachNewThread {
-                continuation.resume(with: Result(catching: body))
-            }
-        }
     }
 }
 
