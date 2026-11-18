@@ -9,11 +9,14 @@ UI and no audio or image library dependency.
 
 ## Features
 
-- Read a file's video track properties and capture metadata, including QuickTime user data and MXF
+- Read a file's video track properties and capture metadata, including start timecode, QuickTime
+  user data and MXF
+- Detect FairPlay-protected content, and check that a metadata write kept every track
 - Extract frames and cache them on disk
 - Playback control without drawing (`VideoTransport`)
 - List a file's audio tracks
-- Lossless trim by remuxing, exact to the in-point (`VideoEditRenderer`)
+- Lossless trim and rotate/mirror by remuxing, exact to the in-point (`VideoEditRenderer`)
+- Per-frame Core Image filters for playback and export, re-encoding only when one is applied
 - Format conversion with AVFoundation export presets (`VideoFormatConverter`)
 - MXF and professional codecs after `ProVideoFormats.register()`, where Apple's Pro Video Formats
   package is installed
