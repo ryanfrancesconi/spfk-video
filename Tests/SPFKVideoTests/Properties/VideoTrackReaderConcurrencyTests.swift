@@ -28,6 +28,7 @@ final class VideoTrackReaderConcurrencyTests {
         #expect(starts == Array(repeating: "01:00:00;01", count: width))
     }
 
+    #if os(macOS)
     @Test func theWatchdogsSampleHoldsEveryThreadsStack() throws {
         let url = try #require(DeadlockWatchdog.sampleProcess())
         defer { try? FileManager.default.removeItem(at: url) }
@@ -36,6 +37,7 @@ final class VideoTrackReaderConcurrencyTests {
         #expect(sample.contains("Call graph:"))
         #expect(sample.contains("theWatchdogsSampleHoldsEveryThreadsStack"))
     }
+    #endif
 }
 
 /// Stops the process when not cancelled in time, after sampling every thread's stack to a file it
@@ -57,8 +59,9 @@ final class DeadlockWatchdog: Sendable {
     }
 
     /// `/usr/bin/sample` of this process for a second, as `xcb.sh` takes of a stalled run, into a file
-    /// under the temporary directory; nil when it wrote none.
+    /// under the temporary directory; nil when it wrote none, and always on iOS.
     static func sampleProcess() -> URL? {
+        #if os(macOS)
         let directory = FileManager.default.temporaryDirectory.appending(component: "stalls", directoryHint: .isDirectory)
         let url = directory.appending(component: "xctest-watchdog-\(ProcessInfo.processInfo.processIdentifier)-\(UUID().uuidString).txt")
 
@@ -78,6 +81,9 @@ final class DeadlockWatchdog: Sendable {
         }
 
         return FileManager.default.fileExists(atPath: url.path) ? url : nil
+        #else
+        return nil
+        #endif
     }
 
     func cancel() {
